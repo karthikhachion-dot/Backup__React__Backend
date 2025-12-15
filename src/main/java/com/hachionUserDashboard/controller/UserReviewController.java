@@ -220,5 +220,9 @@ public class UserReviewController {
 		return repo.findByEmailIgnoreCaseOrderByDateDesc(email);
 	}
 
+	@GetMapping("/userreview/by-course")
+	public List<UserReview> getApprovedReviewsByCourse(@RequestParam String courseName) {
 
+		return repo.findVisibleApprovedReviewsByCourse(courseName);
+	}
 }

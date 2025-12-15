@@ -46,4 +46,8 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Integer>
 			@Param("courseName") String courseName);
 
 	List<UserReview> findByEmailIgnoreCaseOrderByDateDesc(String email);
+
+	@Query(value = "SELECT * FROM userreview " + "WHERE course_name = :courseName "
+			+ "AND type = true", nativeQuery = true)
+	List<UserReview> findVisibleApprovedReviewsByCourse(@Param("courseName") String courseName);
 }

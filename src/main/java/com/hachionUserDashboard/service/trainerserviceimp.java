@@ -106,6 +106,9 @@ public class trainerserviceimp implements TrainerService {
 		existing.setDemo_link_3(updated.getDemo_link_3());
 		existing.setDate(updated.getDate());
 		existing.setTrainerRating(updated.getTrainerRating());
+		existing.setExperience(updated.getExperience());
+		existing.setDesignation(updated.getDesignation());
+		existing.setExperienceCredentials(updated.getExperienceCredentials());
 
 		if (trainerImage != null && !trainerImage.isEmpty()) {
 			String imagePath = saveOrReplaceImage(existing.getTrainerImage(), trainerImage, existing.getTrainer_name(),

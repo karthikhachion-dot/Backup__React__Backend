@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.hachionUserDashboard.dto.ProjectCourseViewResponse;
 import com.hachionUserDashboard.dto.ProjectRequest;
 import com.hachionUserDashboard.dto.ProjectResponse;
 
@@ -46,5 +47,11 @@ public class ProjectController {
 	@GetMapping
 	public ResponseEntity<List<ProjectResponse>> getAll() {
 		return ResponseEntity.ok(projectService.getAllProjects());
+	}
+
+	@GetMapping("/by-course/{courseName}")
+	public ResponseEntity<List<ProjectCourseViewResponse>> getProjectsByCourseName(@PathVariable String courseName) {
+
+		return ResponseEntity.ok(projectService.getProjectsByCourseName(courseName));
 	}
 }

@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import com.hachionUserDashboard.dto.ProjectCourseViewResponse;
 import com.hachionUserDashboard.dto.ProjectRequest;
 import com.hachionUserDashboard.dto.ProjectResponse;
 import com.hachionUserDashboard.entity.Project;
@@ -75,8 +77,13 @@ public class ProjectServiceImpl implements ProjectServiceInterface {
 
 	@Override
 	public List<ProjectResponse> getAllProjects() {
-		return projectRepository.findAll().stream().map(this::toResponse).collect(Collectors.toList());
+	    return projectRepository
+	            .findAll(Sort.by(Sort.Direction.ASC, "courseCategory"))
+	            .stream()
+	            .map(this::toResponse)
+	            .collect(Collectors.toList());
 	}
+
 
 	private ProjectResponse toResponse(Project p) {
 		ProjectResponse res = new ProjectResponse();
@@ -88,4 +95,15 @@ public class ProjectServiceImpl implements ProjectServiceInterface {
 		res.setDate(p.getDate());
 		return res;
 	}
+	 @Override
+	    public List<ProjectCourseViewResponse> getProjectsByCourseName(String courseName) {
+
+	        return projectRepository.findByCourseName(courseName)
+	                .stream()
+	                .map(row -> new ProjectCourseViewResponse(
+	                        (String) row[0], // project_name
+	                        (String) row[1]  // description
+	                ))
+	                .collect(Collectors.toList());
+	    }
 }

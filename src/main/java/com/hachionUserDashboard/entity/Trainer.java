@@ -53,6 +53,16 @@ public class Trainer {
 	@Lob
 	private String trainerImage;
 
+	@Column(name = "experience")
+	private Integer experience;
+
+	@Column(name = "designation")
+	private String designation;
+
+	@Lob
+	@Column(name = "experience_credentials", nullable = true, columnDefinition = "LONGTEXT")
+	private String experienceCredentials;
+
 	public Trainer() {
 	}
 
@@ -162,6 +172,31 @@ public class Trainer {
 
 	public void setTrainerImage(String trainerImage) {
 		this.trainerImage = trainerImage;
+	}
+
+
+	public Integer getExperience() {
+		return experience;
+	}
+
+	public void setExperience(Integer experience) {
+		this.experience = experience;
+	}
+
+	public String getDesignation() {
+		return designation;
+	}
+
+	public void setDesignation(String designation) {
+		this.designation = designation;
+	}
+
+	public String getExperienceCredentials() {
+		return experienceCredentials;
+	}
+
+	public void setExperienceCredentials(String experienceCredentials) {
+		this.experienceCredentials = experienceCredentials;
 	}
 
 }
