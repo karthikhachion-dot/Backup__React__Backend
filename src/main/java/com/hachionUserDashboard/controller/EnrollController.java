@@ -158,10 +158,10 @@ public class EnrollController {
 
 		if (requestEnroll.isSendEmail()) {
 			if ("Live Demo".equalsIgnoreCase(requestEnroll.getMode())) {
-//				emailService.sendEmailForEnrollForLiveDemo(requestEnroll.getEmail(), requestEnroll.getCourse_name(),
-//						dayOfWeek, formattedDateTime, time, null, requestEnroll.getMeeting_link(), null, null,
-//						requestEnroll.getTrainer(), trainerExperience, null, null, null, null, null, null, calendarLink,
-//						technologySlug);
+				emailService.sendEmailForEnrollForLiveDemo(requestEnroll.getEmail(), requestEnroll.getCourse_name(),
+						dayOfWeek, formattedDateTime, time, null, requestEnroll.getMeeting_link(), null, null,
+						requestEnroll.getTrainer(), trainerExperience, null, null, null, null, null, null, calendarLink,
+						technologySlug);
 			}
 			if ("Live Class".equalsIgnoreCase(requestEnroll.getMode())) {
 				emailService.sendEmailForEnrollForLiveClass(requestEnroll.getEmail(), requestEnroll.getName(),

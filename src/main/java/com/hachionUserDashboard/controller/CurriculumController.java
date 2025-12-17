@@ -66,8 +66,6 @@ public class CurriculumController {
 		return repo.findAll();
 	}
 
-
-
 	private String saveFile(MultipartFile file, String subFolder) throws IOException {
 		if (file != null && !file.isEmpty()) {
 
@@ -82,7 +80,6 @@ public class CurriculumController {
 		}
 		return null;
 	}
-
 
 	@PostMapping("curriculum/add")
 	public ResponseEntity<?> addCurriculum(@RequestPart("curriculumData") String curriculumData,
@@ -255,14 +252,12 @@ public class CurriculumController {
 		return html.toString();
 	}
 
-
-
 	@PutMapping(value = "/curriculum/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
 	public ResponseEntity<?> updateCurriculum(@PathVariable int id,
 			@RequestPart("curriculumData") String curriculumData,
 			@RequestPart(value = "curriculumPdf", required = false) MultipartFile curriculumPdf,
 			@RequestPart(value = "assessmentPdf", required = false) MultipartFile assessmentPdf,
-			@RequestPart(value = "brochurePdf", required = false) MultipartFile brochurePdf) { 
+			@RequestPart(value = "brochurePdf", required = false) MultipartFile brochurePdf) {
 		try {
 			Optional<Curriculum> optionalCurriculum = repo.findById(id);
 			if (!optionalCurriculum.isPresent()) {
@@ -438,7 +433,6 @@ public class CurriculumController {
 		return ResponseEntity.ok("Curriculum and associated PDFs deleted successfully.");
 	}
 
-
 	@GetMapping("/curriculum/pdfs/{filename}")
 	public ResponseEntity<Resource> getPdf(@PathVariable String filename) {
 		try {
@@ -476,15 +470,13 @@ public class CurriculumController {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
-	 @GetMapping("/curriculum/course/{course}")
-	    public ResponseEntity<?> getCurriculumByCourse(@PathVariable("course") String course) {
-	        List<Curriculum> result = repo.findByNormalizedCourse(course);
 
-	        if (result.isEmpty()) {
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-	                    .body("No curriculum found for: " + course);
-	        }
+	@GetMapping("/curriculum/course/{course}")
+	public ResponseEntity<List<Curriculum>> getCurriculumByCourse(@PathVariable("course") String course) {
 
-	        return ResponseEntity.ok(result);
-	    }
+		List<Curriculum> result = repo.findByNormalizedCourse(course);
+
+		return ResponseEntity.ok(result);
+	}
+
 }

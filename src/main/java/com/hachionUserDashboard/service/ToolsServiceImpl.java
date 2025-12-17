@@ -303,7 +303,6 @@ public class ToolsServiceImpl {
 	        }
 	    }
 
-	    // ✅ SORT BY CATEGORY NAME (A → Z)
 	    response.sort(
 	        Comparator.comparing(
 	            ToolsFlatResponse::getCategory_name,
