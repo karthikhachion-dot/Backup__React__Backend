@@ -91,9 +91,13 @@ public class EnrollController {
 		int existingCount = repo.countByStudentCourseBatchAndModeLiveClass(requestEnroll.getStudentId(),
 				requestEnroll.getCourse_name(), requestEnroll.getBatchId());
 
+//		if (existingCount > 0) {
+//			return ResponseEntity.status(HttpStatus.CONFLICT)
+//					.body("This enrollment record already exists for Live Class in the database.");
+//		}
 		if (existingCount > 0) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
-					.body("This enrollment record already exists for Live Class in the database.");
+					.body("You are already enrolled for this batch.");
 		}
 
 		Enroll enroll = new Enroll();
