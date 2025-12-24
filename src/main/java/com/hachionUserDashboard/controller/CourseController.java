@@ -48,10 +48,11 @@ public class CourseController {
 	public List<Course> getAllCourse() {
 		return repo.findAll();
 	}
-	 @GetMapping("/summary")
-	    public List<Object[]> getCourseSummaries() {
-	        return repo.findAllSummaryNative();
-	    }
+
+	@GetMapping("/summary")
+	public List<Object[]> getCourseSummaries() {
+		return repo.findAllSummaryNative();
+	}
 
 	private static final String HOME_UPLOADS = System.getProperty("user.home") + "/uploads";
 
@@ -201,8 +202,8 @@ public class CourseController {
 				course.setCrashCourse(updatedCourse.getCrashCourse());
 				course.setMentoringMode(updatedCourse.getMentoringMode());
 				course.setSelfPacedLearning(updatedCourse.getSelfPacedLearning());
-				
-				
+				course.setDefaultTrainer(updatedCourse.getDefaultTrainer());
+
 				if (courseImage != null && !courseImage.isEmpty()) {
 					try {
 						String imagePath = saveImage(courseImage);

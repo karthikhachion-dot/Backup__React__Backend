@@ -186,7 +186,7 @@ public class EnrollController {
 			whatsAppService.sendEnrollmentSms(requestEnroll);
 		}
 
-//		webhookSenderService.sendEnrollmentDetails(requestEnroll);
+		webhookSenderService.sendEnrollmentDetails(requestEnroll);
 
 		return ResponseEntity.ok("Enrollment successfull");
 	}

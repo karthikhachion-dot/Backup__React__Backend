@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.hachionUserDashboard.entity.RegisterStudent;
 
-public interface RegisterStudentRepository extends JpaRepository<RegisterStudent, Integer> {
+public interface RegisterStudentRepository extends JpaRepository<RegisterStudent, Long> {
 
 	RegisterStudent findByEmail(String email);
 

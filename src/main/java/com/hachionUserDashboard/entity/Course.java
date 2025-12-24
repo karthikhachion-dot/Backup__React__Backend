@@ -150,23 +150,25 @@ public class Course {
 
 	@Column(columnDefinition = "LONGTEXT")
 	private String prerequisities;
-	
 
 	@Column
 	private String level = "All Levels";
-	
+
 	@Column(columnDefinition = "LONGTEXT")
 	private String liveTraining;
-	
+
 	@Column(columnDefinition = "LONGTEXT")
 	private String crashCourse;
 
 	@Column(columnDefinition = "LONGTEXT")
 	private String mentoringMode;
-	
+
 	@Column(columnDefinition = "LONGTEXT")
 	private String selfPacedLearning;
-	
+
+	@Column(name = "default_trainer")
+	private String defaultTrainer;
+
 	public Double getMamount() {
 		return mamount;
 	}
@@ -677,7 +679,6 @@ public class Course {
 		this.level = level;
 	}
 
-
 	public String getWhatYouWillLearn() {
 		return whatYouWillLearn;
 	}
@@ -756,6 +757,14 @@ public class Course {
 
 	public void setSelfPacedLearning(String selfPacedLearning) {
 		this.selfPacedLearning = selfPacedLearning;
+	}
+
+	public String getDefaultTrainer() {
+		return defaultTrainer;
+	}
+
+	public void setDefaultTrainer(String defaultTrainer) {
+		this.defaultTrainer = defaultTrainer;
 	}
 
 }

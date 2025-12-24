@@ -32,6 +32,9 @@ public class RegisterStudent {
 	private String mobile;
 
 	@Column(nullable = true)
+	private String whatsapp;
+
+	@Column(nullable = true)
 	private String password;
 
 	// Offline-specific fields
@@ -112,21 +115,29 @@ public class RegisterStudent {
 
 	@Column(name = "bio", length = 1000)
 	private String bio;
-	
+
 	@Column(nullable = true)
 	private String facebook;
-	
+
 	@Column(nullable = true)
 	private String twitter;
-	
+
 	@Column(nullable = true)
 	private String linkedin;
-	
+
 	@Column(nullable = true)
 	private String website;
-	
+
 	@Column(nullable = true)
 	private String github;
+
+	public String getWhatsapp() {
+		return whatsapp;
+	}
+
+	public void setWhatsapp(String whatsapp) {
+		this.whatsapp = whatsapp;
+	}
 
 	public Long getId() {
 		return id;

@@ -40,9 +40,15 @@ public class RegisterStudentController {
 	@Autowired
 	private WebhookSenderService webhookSenderService;
 
+//	@GetMapping("/registerstudent/{id}")
+//	public ResponseEntity<RegisterStudent> getRegisterStudent(@PathVariable Integer id) {
+//		return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+//	}
 	@GetMapping("/registerstudent/{id}")
-	public ResponseEntity<RegisterStudent> getRegisterStudent(@PathVariable Integer id) {
-		return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+	public ResponseEntity<RegisterStudent> getRegisterStudent(@PathVariable Long id) {
+	    return repo.findById(id)
+	            .map(ResponseEntity::ok)
+	            .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 	}
 
 	@GetMapping("/registerstudent")
@@ -102,29 +108,162 @@ public class RegisterStudentController {
 		return prefix + String.format("%03d", nextNumber);
 	}
 
+//	@PutMapping("/registerstudent/update/{id}")
+//	public ResponseEntity<RegisterStudent> updateRegisterStudent(@PathVariable int id,
+//			@RequestBody RegisterStudent updatedRegisterStudent) {
+//		return repo.findById(id).map(registerstudent -> {
+//			registerstudent.setUserName(updatedRegisterStudent.getUserName());
+//			registerstudent.setMobile(updatedRegisterStudent.getMobile());
+//			registerstudent.setEmail(updatedRegisterStudent.getEmail());
+//			registerstudent.setLocation(updatedRegisterStudent.getLocation());
+//			registerstudent.setCountry(updatedRegisterStudent.getCountry());
+//			registerstudent.setTime_zone(updatedRegisterStudent.getTime_zone());
+//			registerstudent.setCourse_name(updatedRegisterStudent.getCourse_name());
+//			registerstudent.setAdditional_email(updatedRegisterStudent.getAdditional_email());
+//			registerstudent.setAdditional_phone(updatedRegisterStudent.getAdditional_phone());
+//			registerstudent.setPassword(updatedRegisterStudent.getPassword());
+//			repo.save(registerstudent);
+//			return ResponseEntity.ok(registerstudent);
+//		}).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+//	}
+	
 	@PutMapping("/registerstudent/update/{id}")
-	public ResponseEntity<RegisterStudent> updateRegisterStudent(@PathVariable int id,
-			@RequestBody RegisterStudent updatedRegisterStudent) {
-		return repo.findById(id).map(registerstudent -> {
-			registerstudent.setUserName(updatedRegisterStudent.getUserName());
-			registerstudent.setMobile(updatedRegisterStudent.getMobile());
-			registerstudent.setEmail(updatedRegisterStudent.getEmail());
-			registerstudent.setLocation(updatedRegisterStudent.getLocation());
-			registerstudent.setCountry(updatedRegisterStudent.getCountry());
-			registerstudent.setTime_zone(updatedRegisterStudent.getTime_zone());
-			registerstudent.setCourse_name(updatedRegisterStudent.getCourse_name());
-			registerstudent.setAdditional_email(updatedRegisterStudent.getAdditional_email());
-			registerstudent.setAdditional_phone(updatedRegisterStudent.getAdditional_phone());
-			registerstudent.setPassword(updatedRegisterStudent.getPassword());
-			repo.save(registerstudent);
-			return ResponseEntity.ok(registerstudent);
-		}).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+	public ResponseEntity<RegisterStudent> updateRegisterStudent(
+	        @PathVariable Long id,
+	        @RequestBody RegisterStudent req) {
+
+	    return repo.findById(id).map(existing -> {
+
+	        // ===== BASIC INFO =====
+	        if (req.getUserName() != null)
+	            existing.setUserName(req.getUserName());
+
+	        if (req.getEmail() != null)
+	            existing.setEmail(req.getEmail());
+
+	        if (req.getMobile() != null)
+	            existing.setMobile(req.getMobile());
+
+	        if (req.getWhatsapp() != null)
+	            existing.setWhatsapp(req.getWhatsapp());
+	        
+	        if (req.getCountry() != null)
+	            existing.setCountry(req.getCountry());
+
+	        if (req.getLocation() != null)
+	            existing.setLocation(req.getLocation());
+
+	        if (req.getVisa_status() != null)
+	            existing.setVisa_status(req.getVisa_status());
+
+	        if (req.getTime_zone() != null)
+	            existing.setTime_zone(req.getTime_zone());
+
+	        if (req.getAnalyst_name() != null)
+	            existing.setAnalyst_name(req.getAnalyst_name());
+
+	        // ===== BUSINESS FIELDS (YOUR BUG WAS HERE) =====
+	        if (req.getSource() != null)
+	            existing.setSource(req.getSource());
+
+	        if (req.getRemarks() != null)
+	            existing.setRemarks(req.getRemarks());
+
+	        if (req.getComments() != null)
+	            existing.setComments(req.getComments());
+
+	        if (req.getSend_details() != null)
+	            existing.setSend_details(req.getSend_details());
+
+	        if (req.getCourse_name() != null)
+	            existing.setCourse_name(req.getCourse_name());
+
+	        if (req.getMode() != null)
+	            existing.setMode(req.getMode());
+
+	        // ===== OPTIONAL CONTACT FIELDS =====
+	        if (req.getAdditional_email() != null)
+	            existing.setAdditional_email(req.getAdditional_email());
+
+	        if (req.getAdditional_phone() != null)
+	            existing.setAdditional_phone(req.getAdditional_phone());
+
+	        // ===== PROFILE FIELDS =====
+	        if (req.getFirstName() != null)
+	            existing.setFirstName(req.getFirstName());
+
+	        if (req.getLastName() != null)
+	            existing.setLastName(req.getLastName());
+
+	        if (req.getDob() != null)
+	            existing.setDob(req.getDob());
+
+	        if (req.getGender() != null)
+	            existing.setGender(req.getGender());
+
+	        if (req.getAddress() != null)
+	            existing.setAddress(req.getAddress());
+
+	        if (req.getBio() != null)
+	            existing.setBio(req.getBio());
+
+	        if (req.getProfileImage() != null)
+	            existing.setProfileImage(req.getProfileImage());
+
+	        // ===== SOCIAL LINKS =====
+	        if (req.getFacebook() != null)
+	            existing.setFacebook(req.getFacebook());
+
+	        if (req.getTwitter() != null)
+	            existing.setTwitter(req.getTwitter());
+
+	        if (req.getLinkedin() != null)
+	            existing.setLinkedin(req.getLinkedin());
+
+	        if (req.getWebsite() != null)
+	            existing.setWebsite(req.getWebsite());
+
+	        if (req.getGithub() != null)
+	            existing.setGithub(req.getGithub());
+
+	        // ===== SECURITY / OTP (DO NOT AUTO-RESET) =====
+	        if (req.getOTP() != null)
+	            existing.setOTP(req.getOTP());
+
+	        if (req.getOTPStatus() != null)
+	            existing.setOTPStatus(req.getOTPStatus());
+
+	        if (req.getOtpGeneratedTime() != null)
+	            existing.setOtpGeneratedTime(req.getOtpGeneratedTime());
+
+	        // ===== PASSWORD (ONLY IF SENT) =====
+	        if (req.getPassword() != null && !req.getPassword().isBlank())
+	            existing.setPassword(req.getPassword());
+
+	        // ===== STATUS =====
+	        if (req.getStatus() != null)
+	            existing.setStatus(req.getStatus());
+
+	        // ===== AUDIT =====
+	        existing.setDate(LocalDate.now()); // update date on edit
+
+	        repo.save(existing);
+	        return ResponseEntity.ok(existing);
+
+	    }).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 	}
 
+
+//	@DeleteMapping("registerstudent/delete/{id}")
+//	public ResponseEntity<?> deleteRegisterStudent(@PathVariable int id) {
+//		repo.deleteById(id);
+//		return ResponseEntity.ok("Student deleted successfully.");
+//	}
+
 	@DeleteMapping("registerstudent/delete/{id}")
-	public ResponseEntity<?> deleteRegisterStudent(@PathVariable int id) {
-		repo.deleteById(id);
-		return ResponseEntity.ok("Student deleted successfully.");
+	public ResponseEntity<?> deleteRegisterStudent(@PathVariable Long id) {
+	    repo.deleteById(id);
+	    return ResponseEntity.ok("Student deleted successfully.");
 	}
 
 	@GetMapping("/check-mobile")
