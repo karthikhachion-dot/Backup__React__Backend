@@ -56,6 +56,7 @@ public class RequestBatchController {
 		requestBatch.setCourseName(requestBatchRequest.getCourseName());
 		requestBatch.setUserName(requestBatchRequest.getUserName());
 		requestBatch.setDate(LocalDate.now());
+		requestBatch.setTrainerName(requestBatchRequest.getTrainerName());
 
 		sendRequestEmail(requestBatch);
 		repo.save(requestBatch);
@@ -103,6 +104,7 @@ public class RequestBatchController {
 		requestBatch.setPreferredTime(requestBatchRequest.getPreferredTime());
 		requestBatch.setNotification(requestBatchRequest.getNotification());
 		requestBatch.setPreferredDay(requestBatchRequest.getPreferredDay());
+		requestBatch.setTrainerName(requestBatchRequest.getTrainerName());
 
 		// Save batch request FIRST
 

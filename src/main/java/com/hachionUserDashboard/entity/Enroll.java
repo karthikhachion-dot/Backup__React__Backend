@@ -1,5 +1,7 @@
 package com.hachionUserDashboard.entity;
 
+import java.time.LocalDate;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
@@ -43,8 +45,9 @@ public class Enroll {
 
 	@Column
 	private String time;
+
 	@Column
-	private String amount;
+	private Double amount = 0.0;
 
 	@Column
 	private String mode;
@@ -55,14 +58,30 @@ public class Enroll {
 	@Column
 	private String trainer;
 
-	@Column
-	private String completion_date;
+	@Column(name = "completion_date")
+	private String completionDate;
 
 	@Column
 	private String meeting_link;
 
 	@Column(name = "resend_count")
 	private int resendCount = 0;
+
+	@Column(name = "payment_status")
+	private String paymentStatus;
+
+	private LocalDate date;
+
+	@Column(name = "payment_date")
+	private LocalDate paymentDate;
+
+	public LocalDate getDate() {
+		return date;
+	}
+
+	public void setDate(LocalDate date) {
+		this.date = date;
+	}
 
 	public int getResendCount() {
 		return resendCount;
@@ -148,12 +167,20 @@ public class Enroll {
 		this.time = time;
 	}
 
-	public String getAmount() {
+	public Double getAmount() {
 		return amount;
 	}
 
-	public void setAmount(String amount) {
+	public void setAmount(Double amount) {
 		this.amount = amount;
+	}
+
+	public String getPaymentStatus() {
+		return paymentStatus;
+	}
+
+	public void setPaymentStatus(String paymentStatus) {
+		this.paymentStatus = paymentStatus;
 	}
 
 	public String getMode() {
@@ -180,12 +207,12 @@ public class Enroll {
 		this.trainer = trainer;
 	}
 
-	public String getCompletion_date() {
-		return completion_date;
+	public String getCompletionDate() {
+		return completionDate;
 	}
 
-	public void setCompletion_date(String completion_date) {
-		this.completion_date = completion_date;
+	public void setCompletionDate(String completionDate) {
+		this.completionDate = completionDate;
 	}
 
 	public String getStudentId() {
@@ -209,13 +236,13 @@ public class Enroll {
 		return "Enroll [id=" + id + ", name=" + name + ", studentId=" + studentId + ", batchId=" + batchId + ", email="
 				+ email + ", mobile=" + mobile + ", course_name=" + course_name + ", enroll_date=" + enroll_date
 				+ ", week=" + week + ", time=" + time + ", amount=" + amount + ", mode=" + mode + ", type=" + type
-				+ ", trainer=" + trainer + ", completion_date=" + completion_date + ", meeting_link=" + meeting_link
+				+ ", trainer=" + trainer + ", completionDate=" + completionDate + ", meeting_link=" + meeting_link
 				+ ", resendCount=" + resendCount + "]";
 	}
 
 	public Enroll(int id, String name, String studentId, String batchId, String email, String mobile,
-			String course_name, String enroll_date, String week, String time, String amount, String mode, String type,
-			String trainer, String completion_date, String meeting_link, int resendCount) {
+			String course_name, String enroll_date, String week, String time, Double amount, String mode, String type,
+			String trainer, String completionDate, String meeting_link, int resendCount) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -231,9 +258,17 @@ public class Enroll {
 		this.mode = mode;
 		this.type = type;
 		this.trainer = trainer;
-		this.completion_date = completion_date;
+		this.completionDate = completionDate;
 		this.meeting_link = meeting_link;
 		this.resendCount = resendCount;
+	}
+
+	public LocalDate getPaymentDate() {
+		return paymentDate;
+	}
+
+	public void setPaymentDate(LocalDate paymentDate) {
+		this.paymentDate = paymentDate;
 	}
 
 }

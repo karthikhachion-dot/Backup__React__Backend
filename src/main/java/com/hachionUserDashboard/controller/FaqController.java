@@ -236,4 +236,20 @@ public class FaqController {
 		}
 	}
 
+	@GetMapping("/faq/course/{courseName}")
+	public ResponseEntity<List<Faq>> getFaqByCourseName(@PathVariable String courseName) {
+		try {
+			List<Faq> faqs = repo.findFaqsByCourseName(courseName);
+
+			if (faqs == null || faqs.isEmpty()) {
+				return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+			}
+
+			return ResponseEntity.ok(faqs);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
 }

@@ -11,10 +11,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(name = "course")
+@Table(name = "course", uniqueConstraints = { @UniqueConstraint(columnNames = { "course_category", "course_name" }) })
+
 public class Course {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +25,8 @@ public class Course {
 	@Column
 	private String courseName;
 
+	@Column(name = "course_category")
+	private String courseCategory;
 	@Lob
 	private String courseImage;
 
@@ -272,9 +276,6 @@ public class Course {
 
 	@Column(name = "date")
 	private LocalDate date;
-
-	@Column(name = "course_category")
-	private String courseCategory;
 
 	public Course() {
 	}

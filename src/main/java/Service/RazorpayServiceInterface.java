@@ -10,7 +10,7 @@ import com.hachionUserDashboard.dto.PaymentTransactionSummaryResponse;
 import com.hachionUserDashboard.entity.PaymentTransaction;
 
 public interface RazorpayServiceInterface {
-	String createOrder(Double amount);
+//	String createOrder(Double amount);
 
 	public String captureOrder(String paymentId, String orderId, String signature, String studentId, String courseName,
 			String batchId);
@@ -33,4 +33,6 @@ public interface RazorpayServiceInterface {
 	public InstallmentStatusResponse getLatestStatus(String studentId, String courseName);
 
 	List<PaymentRequest> getDashboardOrders(String email);
+
+	public String createOrder(Double amount, String studentId, String courseName, String batchId);
 }

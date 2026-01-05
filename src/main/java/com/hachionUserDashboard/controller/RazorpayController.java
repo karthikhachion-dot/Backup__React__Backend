@@ -29,9 +29,15 @@ public class RazorpayController {
 	@Autowired
 	private RazorpayServiceInterface razorpayService;
 
+//	@PostMapping("/create-razorpay-order")
+//	public String createOrder(@RequestParam Double amount) {
+//		return razorpayService.createOrder(amount);
+//	}
+
 	@PostMapping("/create-razorpay-order")
-	public String createOrder(@RequestParam Double amount) {
-		return razorpayService.createOrder(amount);
+	public String createOrder(@RequestParam Double amount, @RequestParam String studentId,
+			@RequestParam String courseName, @RequestParam String batchId) {
+		return razorpayService.createOrder(amount, studentId, courseName, batchId);
 	}
 
 	@PostMapping("/capture-razorpay")
@@ -101,8 +107,9 @@ public class RazorpayController {
 		List<PaymentTransactionSummaryResponse> payments = razorpayService.getAllPaymentTransactions();
 		return ResponseEntity.ok(payments);
 	}
-	 @GetMapping("/orders")
-	    public ResponseEntity<List<PaymentRequest>> getOrders(@RequestParam String email) {
-	        return ResponseEntity.ok(razorpayService.getDashboardOrders(email));
-	    }
+
+	@GetMapping("/orders")
+	public ResponseEntity<List<PaymentRequest>> getOrders(@RequestParam String email) {
+		return ResponseEntity.ok(razorpayService.getDashboardOrders(email));
+	}
 }

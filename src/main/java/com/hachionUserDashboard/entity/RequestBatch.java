@@ -50,9 +50,12 @@ public class RequestBatch {
 
 	@Column(name = "notification")
 	private String notification;
-	
+
 	@Column(name = "preferred_day")
 	private String preferredDay;
+
+	@Column(name = "trainer_name")
+	private String trainerName;
 
 	public RequestBatch() {
 
@@ -138,7 +141,6 @@ public class RequestBatch {
 		this.date = date;
 	}
 
-
 	public String getNotification() {
 		return notification;
 	}
@@ -163,5 +165,14 @@ public class RequestBatch {
 		this.preferredTime = preferredTime;
 	}
 
+	public String getTrainerName() {
+		return trainerName;
+	}
+
+	public void setTrainerName(String trainerName) {
+		this.trainerName = trainerName;
+	}
+
 	
+
 }

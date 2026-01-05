@@ -73,4 +73,13 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
 			""", nativeQuery = true)
 	List<Object[]> findAllSummaryNative();
 
+	@Query(value = """
+			    SELECT COUNT(*)
+			    FROM course
+			    WHERE LOWER(course_category) = LOWER(:courseCategory)
+			      AND LOWER(course_name) = LOWER(:courseName)
+			""", nativeQuery = true)
+	long existsByCategoryAndCourseName(@Param("courseCategory") String courseCategory,
+			@Param("courseName") String courseName);
+
 }

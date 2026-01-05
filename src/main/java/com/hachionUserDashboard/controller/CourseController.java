@@ -111,6 +111,50 @@ public class CourseController {
 					.body("Error adding course: " + e.getMessage());
 		}
 	}
+	@PostMapping("/addCourseDetails")
+	public ResponseEntity<String> addCourseDetails(
+	        @RequestPart("course") String courseData,
+	        @RequestPart("courseImage") MultipartFile courseImage) {
+
+	    try {
+	        ObjectMapper objectMapper = new ObjectMapper();
+	        objectMapper.registerModule(new JavaTimeModule());
+
+	        Course course = objectMapper.readValue(courseData, Course.class);
+
+	        // ✅ Adjusted uniqueness check (COUNT > 0)
+	        boolean exists = repo.existsByCategoryAndCourseName(
+	                course.getCourseCategory(),
+	                course.getCourseName()
+	        ) > 0;
+
+	        if (exists) {
+	            return ResponseEntity.status(HttpStatus.CONFLICT)
+	                    .body("Course already exists for this category. Please use a different course name.");
+	        }
+
+	        // ✅ Image validation
+	        if (courseImage == null || courseImage.isEmpty()) {
+	            return ResponseEntity.badRequest().body("Course image is required.");
+	        }
+
+	        String imagePath = saveImage(courseImage);
+	        if (imagePath == null) {
+	            return ResponseEntity.badRequest().body("Failed to save image.");
+	        }
+
+	        course.setCourseImage(imagePath);
+	        repo.save(course);
+
+	        return ResponseEntity.status(HttpStatus.CREATED)
+	                .body("Course added successfully.");
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	                .body("Error adding course: " + e.getMessage());
+	    }
+	}
 
 	@PutMapping("/update/{id}")
 	public ResponseEntity<String> updateCourse(@PathVariable int id, @RequestPart("course") String courseData,

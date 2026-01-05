@@ -23,6 +23,7 @@ import com.hachionUserDashboard.entity.OnlinePaymentInstallments;
 import com.hachionUserDashboard.entity.PaymentTransaction;
 import com.hachionUserDashboard.entity.RegisterStudent;
 import com.hachionUserDashboard.repository.CourseRepository;
+import com.hachionUserDashboard.repository.EnrollRepository;
 import com.hachionUserDashboard.repository.PaymentTransactionRepository;
 import com.hachionUserDashboard.repository.RegisterStudentRepository;
 import com.razorpay.Order;
@@ -52,25 +53,57 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 	@Autowired
 	private CourseRepository courseRepository;
 
+	@Autowired
+	private EnrollRepository enrollRepository;
+
 	public RazorpayServiceImpl(@Value("${razorpay.key_id}") String keyId,
 			@Value("${razorpay.key_secret}") String keySecret) throws Exception {
 		this.razorpayClient = new RazorpayClient(keyId, keySecret);
 	}
 
+//	@Override
+//	public String createOrder(Double amount) {
+//		try {
+//			JSONObject orderRequest = new JSONObject();
+//			int amountInPaise = (int) (amount * 100);
+//			orderRequest.put("amount", amountInPaise);
+//			orderRequest.put("currency", "INR");
+//			orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
+//
+//			Order order = razorpayClient.orders.create(orderRequest);
+//			return order.toString();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//			return "Error creating Razorpay order: " + e.getMessage();
+//		}
+//	}
+
 	@Override
-	public String createOrder(Double amount) {
+	public String createOrder(Double amount, String studentId, String courseName, String batchId) {
 		try {
+
+			// ✅ CHECK ONLY PAYMENT STATUS (NO ENTITY LOAD)
+			 Optional<Double> paidAmountOpt =
+		                enrollRepository.findPaidAmount(studentId, courseName, batchId);
+
+		        if (paidAmountOpt.isPresent() && paidAmountOpt.get() != null && paidAmountOpt.get() > 0) {
+		            return "❌ You have already paid for this batch.";
+		        }
+			// ✅ CREATE RAZORPAY ORDER
 			JSONObject orderRequest = new JSONObject();
 			int amountInPaise = (int) (amount * 100);
+
 			orderRequest.put("amount", amountInPaise);
 			orderRequest.put("currency", "INR");
 			orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
 
 			Order order = razorpayClient.orders.create(orderRequest);
+
 			return order.toString();
+
 		} catch (Exception e) {
 			e.printStackTrace();
-			return "Error creating Razorpay order: " + e.getMessage();
+			return "❌ Error creating Razorpay order: " + e.getMessage();
 		}
 	}
 
@@ -429,12 +462,12 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 
 		for (Object[] row : results) {
 			PaymentRequest req = new PaymentRequest();
-			req.setInvoiceNumber(row[0] != null ? row[0].toString() : null); 
-			req.setCourseName(row[1] != null ? row[1].toString() : null); 
+			req.setInvoiceNumber(row[0] != null ? row[0].toString() : null);
+			req.setCourseName(row[1] != null ? row[1].toString() : null);
 			if (row[2] != null) {
 				String dateOnly;
 				if (row[2] instanceof java.sql.Timestamp ts) {
-					dateOnly = ts.toLocalDateTime().toLocalDate().toString(); 
+					dateOnly = ts.toLocalDateTime().toLocalDate().toString();
 				} else if (row[2] instanceof java.util.Date d) {
 					dateOnly = new java.sql.Date(d.getTime()).toString();
 				} else {
@@ -442,7 +475,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 				}
 				req.setPaymentDate(dateOnly);
 			}
-			req.setTotalAmount(row[3] != null ? Double.valueOf(row[3].toString()) : 0.0); 
+			req.setTotalAmount(row[3] != null ? Double.valueOf(row[3].toString()) : 0.0);
 			req.setStatus(formatStatus(row[4] != null ? row[4].toString() : "Processing"));
 			list.add(req);
 		}

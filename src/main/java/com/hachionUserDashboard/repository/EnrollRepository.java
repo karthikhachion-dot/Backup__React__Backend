@@ -1,6 +1,7 @@
 package com.hachionUserDashboard.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -68,5 +69,23 @@ public interface EnrollRepository extends JpaRepository<Enroll, Integer> {
 	List<String> findTrainersByEmailAndCourse(@Param("email") String email, @Param("courseName") String courseName);
 
 	Enroll findByEmailAndBatchId(String email, String batchId);
+
+	@Query(value = "SELECT * FROM enroll WHERE student_id = :studentId AND course_name = :courseName AND batch_id = :batchId LIMIT 1", nativeQuery = true)
+	Optional<Enroll> findByStudentIdAndCourseNameAndBatchId(@Param("studentId") String studentId,
+			@Param("courseName") String courseName, @Param("batchId") String batchId);
+//
+//	@Query("SELECT e.paymentStatus FROM Enroll e  WHERE e.studentId = :studentId AND e.course_name = :courseName AND e.batchId = :batchId")
+//	Optional<String> findPaymentStatus(@Param("studentId") String studentId, @Param("courseName") String courseName,
+//			@Param("batchId") String batchId);
+
+//	@Query(value = "SELECT amount FROM enroll WHERE student_id = :studentId AND course_name = :courseName AND batch_id = :batchId", nativeQuery = true)
+
+	@Query(value = "SELECT amount FROM enroll WHERE student_id = :studentId AND course_name = :courseName AND batch_id = :batchId LIMIT 1", nativeQuery = true)
+	Optional<Double> findPaidAmount(@Param("studentId") String studentId, @Param("courseName") String courseName,
+			@Param("batchId") String batchId);
+
+	@Query(value = " SELECT amount FROM enroll WHERE student_id = :studentId AND course_name = :courseName AND batch_id = :batchId ORDER BY id DESC LIMIT 1", nativeQuery = true)
+	Double findLatestAmount(@Param("studentId") String studentId, @Param("courseName") String courseName,
+			@Param("batchId") String batchId);
 
 }
