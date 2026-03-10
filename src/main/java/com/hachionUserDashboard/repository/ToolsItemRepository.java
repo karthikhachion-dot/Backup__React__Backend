@@ -1,5 +1,6 @@
 package com.hachionUserDashboard.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -31,9 +32,15 @@ public interface ToolsItemRepository extends JpaRepository<ToolsItemEntity, Long
 			""")
 	Long countDuplicateExcludeId(@Param("category") String category, @Param("course") String course,
 			@Param("toolsName") String toolsName, @Param("id") Long id);
-	
+
 	Optional<ToolsItemEntity> findById(Long id);
-	
-	
+
+	@Query("""
+			    SELECT t
+			    FROM ToolsItemEntity t
+			    WHERE LOWER(t.toolsName) = LOWER(:toolsName)
+			    ORDER BY t.id ASC
+			""")
+	List<ToolsItemEntity> findByToolsNameIgnoreCaseOrderByIdAsc(String toolsName);
 
 }

@@ -15,43 +15,46 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.hachionUserDashboard.dto.TalkToOurAdvisorRequest;
+import com.hachionUserDashboard.service.WebhookSenderService;
 
 import Response.TalkToOurAdvisorResponse;
 import Service.TalkToOurAdvisorServiceInterface;
 
 //@CrossOrigin
-@CrossOrigin(origins = {"http://localhost:3000"})
+@CrossOrigin(origins = { "http://localhost:3000" })
 @RestController
 @RequestMapping("/advisors")
 public class TalkToOurAdvisorController {
 
-	 @Autowired
-	    private TalkToOurAdvisorServiceInterface service;
+	@Autowired
+	private TalkToOurAdvisorServiceInterface service;
 
-	    @PostMapping
-	    public ResponseEntity<TalkToOurAdvisorResponse> createAdvisor(@RequestBody TalkToOurAdvisorRequest request) {
-	        System.out.println("Backend" +request);
-	    	TalkToOurAdvisorResponse response = service.createTalkToOurAdvisor(request);
-	        
-	        return ResponseEntity.ok(response);
-	    }
+	@Autowired
+	private WebhookSenderService webhookSenderService;
 
-	    @GetMapping
-	    public ResponseEntity<List<TalkToOurAdvisorResponse>> getAllAdvisors() {
-	        List<TalkToOurAdvisorResponse> responses = service.getAllTalkToOurAdvisor();
-	        return ResponseEntity.ok(responses);
-	    }
+	@PostMapping
+	public ResponseEntity<TalkToOurAdvisorResponse> createAdvisor(@RequestBody TalkToOurAdvisorRequest request) {
+		System.out.println("Backend" + request);
+		TalkToOurAdvisorResponse response = service.createTalkToOurAdvisor(request);
+		webhookSenderService.sendCorporateTrainingLead(request);
+		return ResponseEntity.ok(response);
+	}
 
-	    @GetMapping("/{id}")
-	    public ResponseEntity<TalkToOurAdvisorResponse> getAdvisorById(@PathVariable Long id) {
-	        Optional<TalkToOurAdvisorResponse> advisorResponse = service.getById(id);
-	        return advisorResponse.map(ResponseEntity::ok)
-	                             .orElseGet(() -> ResponseEntity.notFound().build());
-	    }
+	@GetMapping
+	public ResponseEntity<List<TalkToOurAdvisorResponse>> getAllAdvisors() {
+		List<TalkToOurAdvisorResponse> responses = service.getAllTalkToOurAdvisor();
+		return ResponseEntity.ok(responses);
+	}
 
-	    @DeleteMapping("/{id}")
-	    public ResponseEntity<String> deleteAdvisor(@PathVariable Long id) {
-	        String responseMessage = service.deleteTalkToAdvisor(id);
-	        return ResponseEntity.ok(responseMessage);
-	    }
+	@GetMapping("/{id}")
+	public ResponseEntity<TalkToOurAdvisorResponse> getAdvisorById(@PathVariable Long id) {
+		Optional<TalkToOurAdvisorResponse> advisorResponse = service.getById(id);
+		return advisorResponse.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<String> deleteAdvisor(@PathVariable Long id) {
+		String responseMessage = service.deleteTalkToAdvisor(id);
+		return ResponseEntity.ok(responseMessage);
+	}
 }

@@ -2,14 +2,15 @@ package com.hachionUserDashboard.dto;
 
 public class InstallmentStatusResponse {
 	private String requestStatus;
-	private Integer numSelectedInstallments;
+	private int numSelectedInstallments;
+	private String batchId;
 
-	public InstallmentStatusResponse(String requestStatus, Integer numSelectedInstallments) {
+	public InstallmentStatusResponse(String requestStatus, int numSelectedInstallments, String batchId) {
 		this.requestStatus = requestStatus;
 		this.numSelectedInstallments = numSelectedInstallments;
+		this.batchId = batchId;
 	}
 
-	// getters & setters
 	public String getRequestStatus() {
 		return requestStatus;
 	}
@@ -18,11 +19,21 @@ public class InstallmentStatusResponse {
 		this.requestStatus = requestStatus;
 	}
 
-	public Integer getNumSelectedInstallments() {
+	public int getNumSelectedInstallments() {
 		return numSelectedInstallments;
 	}
 
-	public void setNumSelectedInstallments(Integer numSelectedInstallments) {
+	public void setNumSelectedInstallments(int numSelectedInstallments) {
 		this.numSelectedInstallments = numSelectedInstallments;
 	}
+
+	public String getBatchId() {
+		return batchId;
+	}
+
+	public void setBatchId(String batchId) {
+		this.batchId = batchId;
+	}
+
+	// getters & setters
 }

@@ -56,6 +56,9 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 	@Autowired
 	private EnrollRepository enrollRepository;
 
+	@Autowired
+	private WebhookSenderService webhookSenderService;
+
 	public RazorpayServiceImpl(@Value("${razorpay.key_id}") String keyId,
 			@Value("${razorpay.key_secret}") String keySecret) throws Exception {
 		this.razorpayClient = new RazorpayClient(keyId, keySecret);
@@ -83,12 +86,11 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		try {
 
 			// ✅ CHECK ONLY PAYMENT STATUS (NO ENTITY LOAD)
-			 Optional<Double> paidAmountOpt =
-		                enrollRepository.findPaidAmount(studentId, courseName, batchId);
+			Optional<Double> paidAmountOpt = enrollRepository.findPaidAmount(studentId, courseName, batchId);
 
-		        if (paidAmountOpt.isPresent() && paidAmountOpt.get() != null && paidAmountOpt.get() > 0) {
-		            return "❌ You have already paid for this batch.";
-		        }
+			if (paidAmountOpt.isPresent() && paidAmountOpt.get() != null && paidAmountOpt.get() > 0) {
+				return "❌ You have already paid for this batch.";
+			}
 			// ✅ CREATE RAZORPAY ORDER
 			JSONObject orderRequest = new JSONObject();
 			int amountInPaise = (int) (amount * 100);
@@ -178,7 +180,8 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 
 			PaymentRequest paymentRequest = convertTransactionToPaymentRequest(tx, studentName, studentEmail);
 
-			paymentTransactionRepository.save(tx);
+			PaymentTransaction save = paymentTransactionRepository.save(tx);
+
 			return "✅ Razorpay transaction successful: " + paymentId + " (Status: " + status + ")";
 		} catch (Exception e) {
 			return "❌ Error capturing Razorpay order: " + e.getMessage();
@@ -288,6 +291,11 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 				child.setInstallmentNumber(newInstallmentNumber);
 				child.setInstallmentAmount(eachInstallmentAmount);
 				child.setPaidAmount(eachInstallmentAmount);
+				System.out.println(">>> Updating enroll.amount with total paid = " + child.getPaidAmount());
+
+				int updated = enrollRepository.updateAmountByStudentCourseBatchNative(child.getPaidAmount(), studentId,
+						courseName, batchId);
+				System.out.println(">>> Enroll rows updated = " + updated);
 				child.setPaymentDate(LocalDate.now());
 				child.setStatus("PAID");
 				child.setOrderId(orderId);
@@ -295,6 +303,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 				child.setPaymentMethod(method);
 				tx.getOnlinePaymentInstallments().add(child);
 				tx.setInstallmentCount(tx.getInstallmentCount() + 1);
+
 			}
 
 			tx.setAmount(tx.getAmount() + totalPaid);
@@ -305,7 +314,8 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			tx.setNumSelectedInstallments(numSelectedInstallments);
 			tx.setCourseFee(finalPrice);
 
-			paymentTransactionRepository.save(tx);
+			PaymentTransaction save = paymentTransactionRepository.save(tx);
+			// Sync enroll table with total paid amount
 
 			PaymentRequest paymentRequest = convertTransactionToPaymentRequest(tx, studentName, studentEmail);
 
@@ -347,8 +357,9 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 
 	}
 
-	public List<PaymentTransaction> getTransactionsByEmailAndCourse(String payerEmail, String courseName) {
-		return paymentTransactionRepository.findByPayerEmailAndCourseName(payerEmail, courseName);
+	public List<PaymentTransaction> getTransactionsByEmailAndCourse(String payerEmail, String courseName,
+			String batchId) {
+		return paymentTransactionRepository.findByPayerEmailAndCourseName(payerEmail, courseName, batchId);
 	}
 
 	@Override
@@ -366,6 +377,8 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		paymentTransaction.setRequestDate(LocalDate.now());
 
 		PaymentTransaction savedTransaction = paymentTransactionRepository.save(paymentTransaction);
+
+		webhookSenderService.sendInstallmentRequestDetails(savedTransaction);
 
 		PaymentTransactionResponse response = createResponseForPaymentRequest(savedTransaction);
 		return response;
@@ -391,7 +404,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 	@Override
 	public List<PaymentTransactionResponse> getAllRequestInstallmetns() {
 
-		List<PaymentTransaction> transactions = paymentTransactionRepository.findAll();
+		List<PaymentTransaction> transactions = paymentTransactionRepository.findRequestedInstallments();
 
 		return transactions.stream().map(tx -> {
 			PaymentTransactionResponse response = new PaymentTransactionResponse();
@@ -415,29 +428,44 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		paymentTransactionRepository.updateRequestStatus(transactionId, requestStatus);
 	}
 
-	public InstallmentStatusResponse getLatestStatus(String studentId, String courseName) {
+//	public InstallmentStatusResponse getLatestStatus(String studentId, String courseName) {
+//		List<Object[]> results = paymentTransactionRepository
+//				.findLatestStatusAndInstallmentsByStudentIdAndCourseName(studentId, courseName);
+//
+//		if (!results.isEmpty()) {
+//			Object[] row = results.get(0);
+//			String status = (String) row[0];
+//			Integer installments = row[1] != null ? ((Number) row[1]).intValue() : 0;
+//
+//			return new InstallmentStatusResponse(status, installments);
+//		}
+//
+//		return new InstallmentStatusResponse("not_found", 0);
+//	}
+
+	public InstallmentStatusResponse getLatestStatus(String studentId, String courseName, String batchId) {
 		List<Object[]> results = paymentTransactionRepository
-				.findLatestStatusAndInstallmentsByStudentIdAndCourseName(studentId, courseName);
+				.findLatestStatusAndInstallmentsByStudentIdAndCourseNameAndBatchId(studentId, courseName, batchId);
 
 		if (!results.isEmpty()) {
 			Object[] row = results.get(0);
 			String status = (String) row[0];
 			Integer installments = row[1] != null ? ((Number) row[1]).intValue() : 0;
+			String dbBatchId = (String) row[2];
 
-			return new InstallmentStatusResponse(status, installments);
+			return new InstallmentStatusResponse(status, installments, dbBatchId);
 		}
 
-		return new InstallmentStatusResponse("not_found", 0);
+		return new InstallmentStatusResponse("not_found", 0, batchId);
 	}
 
 	public List<PaymentTransactionSummaryResponse> getAllPaymentTransactions() {
-		List<PaymentTransaction> transactions = paymentTransactionRepository.findAll();
+	    List<PaymentTransaction> transactions = paymentTransactionRepository.findAll();
 
-		AtomicInteger counter = new AtomicInteger(1);
+	    return transactions.stream().map(tx -> {
+	        PaymentTransactionSummaryResponse res = new PaymentTransactionSummaryResponse();
 
-		return transactions.stream().map(tx -> {
-			PaymentTransactionSummaryResponse res = new PaymentTransactionSummaryResponse();
-			res.setSerialNo(counter.getAndIncrement());
+	        res.setId(tx.getId()); 
 			res.setStudentId(tx.getStudentId());
 			res.setStudentName(tx.getStudentName());
 			res.setEmail(tx.getPayerEmail());
@@ -454,7 +482,6 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			return res;
 		}).collect(Collectors.toList());
 	}
-
 	@Override
 	public List<PaymentRequest> getDashboardOrders(String email) {
 		List<Object[]> results = paymentTransactionRepository.findDashboardRows(email);
@@ -494,5 +521,18 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		default:
 			return "Processing";
 		}
+	}
+
+	@Override
+	public PaymentTransaction getTransactionById(Long transactionId) {
+		return paymentTransactionRepository.findById(transactionId)
+				.orElseThrow(() -> new RuntimeException("Transaction not found with id: " + transactionId));
+	}
+
+	public void deletePaymentById(Long id) {
+		if (!paymentTransactionRepository.existsById(id)) {
+			throw new RuntimeException("Payment not found with id: " + id);
+		}
+		paymentTransactionRepository.deleteById(id);
 	}
 }

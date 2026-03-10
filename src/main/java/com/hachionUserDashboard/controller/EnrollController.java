@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -50,6 +51,7 @@ import jakarta.mail.internet.MimeMessage;
 @CrossOrigin
 @RestController
 public class EnrollController {
+
 	@Autowired
 	private EnrollRepository repo;
 
@@ -84,7 +86,11 @@ public class EnrollController {
 
 	@GetMapping("/enroll")
 	public List<Enroll> getAllEnroll() {
-		return repo.findAllByOrderByEnrollDateDesc();
+		List<Enroll> enrollList = repo.findAll();
+
+		enrollList.sort(Comparator.comparing(Enroll::getId).reversed());
+
+		return enrollList;
 	}
 
 	@PostMapping("/enroll/add")
@@ -178,13 +184,23 @@ public class EnrollController {
 						null, null, null, null, null, null, null, technologySlug);
 			}
 		}
+		if ("Self-Paced Learning".equalsIgnoreCase(requestEnroll.getMode())) {
+
+			String todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MMMM-yyyy"));
+
+			emailService.sendEmailForEnrollForSelfPaced(requestEnroll.getEmail(), requestEnroll.getName(),
+					requestEnroll.getCourse_name(), todayDate);
+		}
 
 		if (requestEnroll.isSendWhatsApp()) {
 			if ("Live Class".equalsIgnoreCase(requestEnroll.getMode())) {
 				whatsAppService.sendLiveClassDemoEnrollmentDetails(requestEnroll);
 			} else if ("Live Demo".equalsIgnoreCase(requestEnroll.getMode())) {
 				whatsAppService.sendLiveDemoEnrollmentDetails(requestEnroll);
+			} else if ("Self-Paced Learning".equalsIgnoreCase(requestEnroll.getMode())) {
+				whatsAppService.sendSelfPacedEnrollmentConfirmed(enroll);
 			}
+
 		}
 		if (requestEnroll.isSendText()) {
 			whatsAppService.sendEnrollmentSms(requestEnroll);
@@ -227,6 +243,66 @@ public class EnrollController {
 				null, null, null, null, null, null, technologySlug);
 
 		return ResponseEntity.ok("Email resent successfully. Check your registered email.");
+	}
+
+	@PostMapping("/enroll/resend-email-for-live")
+	public ResponseEntity<?> resendEnrollEmailForLive(@RequestBody Map<String, String> request)
+			throws MessagingException {
+
+		String email = request.get("email");
+
+		List<Enroll> enrollments = repo.findByEmail(email);
+		if (enrollments.isEmpty()) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No enrollment found for this email.");
+		}
+
+		// Latest enrollment
+		Enroll latest = enrollments.get(enrollments.size() - 1);
+
+		// Optional safety limit (recommended)
+		if (latest.getResendCount() >= 3) {
+			return ResponseEntity.badRequest().body("Resend limit reached. Please contact support.");
+		}
+
+		// Update resend count
+		latest.setResendCount(latest.getResendCount() + 1);
+
+		// Format date
+		LocalDate enrollDate = LocalDate.parse(latest.getEnroll_date());
+		String dayOfWeek = enrollDate.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
+		String formattedDate = enrollDate.format(DateTimeFormatter.ofPattern("dd-MMMM-yyyy"));
+
+		latest.setWeek(dayOfWeek);
+		repo.save(latest);
+
+		// Technology slug
+		String technologySlug = latest.getCourse_name().toLowerCase().replaceAll("\\s+", "-").replaceAll("[^a-z0-9\\-]",
+				"");
+
+		// Send LIVE class email
+		emailService.sendEmailForEnrollForLiveClass(latest.getEmail(), // toEmail
+				latest.getName(), // studentFullName
+				latest.getCourse_name(), // technologyName
+				dayOfWeek, // day
+				formattedDate, // date
+				latest.getTime(), // time
+				null, // timezone
+				latest.getMeeting_link(), // googleMeetLink
+				null, // meetingId
+				null, // passcode
+				latest.getTrainer(), // instructorName
+				null, // experience
+				null, // company
+				null, // version
+				null, // feature
+				null, // percentage
+				null, // salaryAmount
+				null, // keyConcept
+				null, // calendarLink
+				technologySlug // technologySlug
+		);
+
+		return ResponseEntity.ok("Live class email resent successfully.");
 	}
 
 	@DeleteMapping("enroll/delete/{id}")
@@ -587,4 +663,48 @@ public class EnrollController {
 		return ResponseEntity.ok("Enrollment payment updated successfully");
 	}
 
+	@GetMapping("/enroll/is-self-paced-enrolled")
+	public ResponseEntity<?> isSelfPacedEnrolled(@RequestParam String studentId, @RequestParam String courseName) {
+		Long count = repo.countSelfPacedEnrollment(studentId, courseName);
+
+		boolean enrolled = (count != null && count > 0);
+
+		return ResponseEntity.ok(Map.of("enrolled", enrolled, "count", count == null ? 0 : count));
+	}
+	@GetMapping("/enroll/installment-progress")
+	public ResponseEntity<?> getInstallmentUiStatus(
+	        @RequestParam String studentId,
+	        @RequestParam String courseName,
+	        @RequestParam String batchId) {
+
+	    List<Object[]> rows = paymentTransactionRepository
+	            .findInstallmentUiStatus(studentId, courseName, batchId);
+
+	    int checkboxClicked = 0;
+	    int numberOfInstallments = 0;
+	    String requestStatus = null;
+
+	    if (rows != null && !rows.isEmpty()) {
+	        Object[] row = rows.get(0);
+
+	        checkboxClicked = row[0] != null ? ((Number) row[0]).intValue() : 0;
+	        numberOfInstallments = row[1] != null ? ((Number) row[1]).intValue() : 0;
+	        requestStatus = row[2] != null ? row[2].toString() : null;
+	    }
+
+	    boolean allInstallmentsPaid =
+	            numberOfInstallments > 0 && checkboxClicked >= numberOfInstallments;
+
+	    return ResponseEntity.ok(
+	        Map.of(
+	            "studentId", studentId,
+	            "courseName", courseName,
+	            "batchId", batchId,
+	            "checkboxClicked", checkboxClicked,
+	            "numberOfInstallments", numberOfInstallments,
+	            "requestStatus", requestStatus,
+	            "allInstallmentsPaid", allInstallmentsPaid
+	        )
+	    );
+	}
 }

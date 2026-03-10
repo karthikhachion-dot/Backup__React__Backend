@@ -24,6 +24,9 @@ public class FaqQueryServiceImpl implements FaqQueryService {
 	@Autowired
 	private FaqQueryRepository faqQueryRepository;
 
+	@Autowired
+	private WebhookSenderService webhookSenderService;
+
 	public FaqQueryServiceImpl(FaqQueryRepository faqQueryRepository) {
 		this.faqQueryRepository = faqQueryRepository;
 	}
@@ -37,6 +40,7 @@ public class FaqQueryServiceImpl implements FaqQueryService {
 		entity.setDate(LocalDate.now()); // always current date
 
 		FaqQuery saved = faqQueryRepository.save(entity);
+		webhookSenderService.sendFaqAskQuestionLead(saved);
 		return toResponse(saved);
 	}
 

@@ -453,7 +453,13 @@ public class Userimpl implements UserService {
 			response.setLocation(user.getLocation());
 			response.setTimeZone(user.getTime_zone());
 //			response.setDob(user.getDob() != null ? user.getDob().format(OUT) : null);
-			response.setDob(user.getDob()); // <-- no manual formatting, same type
+			response.setDob(user.getDob()); 
+			response.setFacebook(user.getFacebook());
+			response.setTwitter(user.getTwitter());
+			response.setLinkedin(user.getLinkedin());
+			response.setWebsite(user.getWebsite());
+			response.setGithub(user.getGithub());
+
 
 			return response;
 		} else {

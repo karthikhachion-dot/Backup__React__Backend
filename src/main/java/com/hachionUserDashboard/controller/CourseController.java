@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,8 +29,10 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hachionUserDashboard.entity.Course;
+import com.hachionUserDashboard.entity.Trainer;
 import com.hachionUserDashboard.exception.ResourceNotFoundException;
 import com.hachionUserDashboard.repository.CourseRepository;
+import com.hachionUserDashboard.repository.TrainerRepository;
 
 @CrossOrigin
 @RestController
@@ -38,6 +41,9 @@ public class CourseController {
 
 	@Autowired
 	private CourseRepository repo;
+
+	@Autowired
+	private TrainerRepository trainerRepository;
 
 	@GetMapping("/{id}")
 	public ResponseEntity<Course> getCourse(@PathVariable Integer id) {
@@ -102,58 +108,92 @@ public class CourseController {
 				return ResponseEntity.badRequest().body("Course image is required.");
 			}
 
-			repo.save(course);
+			Course savedCourse = repo.save(course);
+			Trainer trainer = new Trainer();
+			trainer.setTrainer_name("Hachion Certified Trainer");
+			trainer.setCategory_name(savedCourse.getCourseCategory());
+			trainer.setCourse_name(savedCourse.getCourseName());
+			trainer.setTrainerRating(4.0);
+			trainer.setDate(LocalDate.now());
+			trainer.setDesignation("Senior Industry Trainer & Subject Matter Expert");
+			trainer.setExperience(10);
+			trainer.setExperienceCredentials("Industry-experienced professional with strong domain expertise\n"
+					+ "Hands-on exposure to real-time projects and enterprise-level applications\n"
+					+ "Expertise in practical, scenario-based learning approaches\n"
+					+ "Strong understanding of end-to-end software development and delivery processes\n"
+					+ "Experience working in Agile / Scrum-based environments\n"
+					+ "Proven track record of mentoring students and professionals for job readiness");
+			trainer.setSummary(
+					"<p>Our expert trainer represents Hachion's pool of certified industry professionals with extensive experience in delivering high-quality, job-oriented online training. Known for clear explanations, practical examples, and strong learner engagement, the sessions focus on real-world use cases, hands-on practice, and industry best practices.</p>"
+							+ "<p>Training is structured, interactive, and aligned with current market demands to ensure learners gain both conceptual clarity and practical confidence.</p>");
 
-			return ResponseEntity.status(HttpStatus.CREATED).body("Course added successfully.");
+			trainerRepository.save(trainer);
+
+			return ResponseEntity.status(HttpStatus.CREATED).body("Course and default trainer added successfully.");
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body("Error adding course: " + e.getMessage());
 		}
 	}
+
 	@PostMapping("/addCourseDetails")
-	public ResponseEntity<String> addCourseDetails(
-	        @RequestPart("course") String courseData,
-	        @RequestPart("courseImage") MultipartFile courseImage) {
+	public ResponseEntity<String> addCourseDetails(@RequestPart("course") String courseData,
+			@RequestPart("courseImage") MultipartFile courseImage) {
 
-	    try {
-	        ObjectMapper objectMapper = new ObjectMapper();
-	        objectMapper.registerModule(new JavaTimeModule());
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			objectMapper.registerModule(new JavaTimeModule());
 
-	        Course course = objectMapper.readValue(courseData, Course.class);
+			Course course = objectMapper.readValue(courseData, Course.class);
 
-	        // ✅ Adjusted uniqueness check (COUNT > 0)
-	        boolean exists = repo.existsByCategoryAndCourseName(
-	                course.getCourseCategory(),
-	                course.getCourseName()
-	        ) > 0;
+			// ✅ Adjusted uniqueness check (COUNT > 0)
+			boolean exists = repo.existsByCategoryAndCourseName(course.getCourseCategory(), course.getCourseName()) > 0;
 
-	        if (exists) {
-	            return ResponseEntity.status(HttpStatus.CONFLICT)
-	                    .body("Course already exists for this category. Please use a different course name.");
-	        }
+			if (exists) {
+				return ResponseEntity.status(HttpStatus.CONFLICT)
+						.body("Course already exists for this category. Please use a different course name.");
+			}
 
-	        // ✅ Image validation
-	        if (courseImage == null || courseImage.isEmpty()) {
-	            return ResponseEntity.badRequest().body("Course image is required.");
-	        }
+			// ✅ Image validation
+			if (courseImage == null || courseImage.isEmpty()) {
+				return ResponseEntity.badRequest().body("Course image is required.");
+			}
 
-	        String imagePath = saveImage(courseImage);
-	        if (imagePath == null) {
-	            return ResponseEntity.badRequest().body("Failed to save image.");
-	        }
+			String imagePath = saveImage(courseImage);
+			if (imagePath == null) {
+				return ResponseEntity.badRequest().body("Failed to save image.");
+			}
 
-	        course.setCourseImage(imagePath);
-	        repo.save(course);
+			course.setCourseImage(imagePath);
+			Course savedCourse = repo.save(course);
+			Trainer trainer = new Trainer();
+			trainer.setTrainer_name("Hachion Certified Trainer");
+			trainer.setCategory_name(savedCourse.getCourseCategory());
+			trainer.setCourse_name(savedCourse.getCourseName());
+			trainer.setTrainerRating(4.0);
+			trainer.setDate(LocalDate.now());
+			trainer.setDesignation("Senior Industry Trainer & Subject Matter Expert");
+			trainer.setExperience(10);
+			trainer.setExperienceCredentials("Industry-experienced professional with strong domain expertise\n"
+					+ "Hands-on exposure to real-time projects and enterprise-level applications\n"
+					+ "Expertise in practical, scenario-based learning approaches\n"
+					+ "Strong understanding of end-to-end software development and delivery processes\n"
+					+ "Experience working in Agile / Scrum-based environments\n"
+					+ "Proven track record of mentoring students and professionals for job readiness");
+			trainer.setSummary(
+					"<p>Our expert trainer represents Hachion's pool of certified industry professionals with extensive experience in delivering high-quality, job-oriented online training. Known for clear explanations, practical examples, and strong learner engagement, the sessions focus on real-world use cases, hands-on practice, and industry best practices.</p>"
+							+ "<p>Training is structured, interactive, and aligned with current market demands to ensure learners gain both conceptual clarity and practical confidence.</p>");
 
-	        return ResponseEntity.status(HttpStatus.CREATED)
-	                .body("Course added successfully.");
+			trainerRepository.save(trainer);
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error adding course: " + e.getMessage());
-	    }
+			return ResponseEntity.status(HttpStatus.CREATED).body("Course and default trainer added successfully.");
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error adding course: " + e.getMessage());
+		}
 	}
 
 	@PutMapping("/update/{id}")

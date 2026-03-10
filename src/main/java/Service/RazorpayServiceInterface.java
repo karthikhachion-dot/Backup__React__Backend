@@ -20,7 +20,7 @@ public interface RazorpayServiceInterface {
 
 	public Integer getCheckboxClicked(String studentId, String courseName, String batchId);
 
-	public List<PaymentTransaction> getTransactionsByEmailAndCourse(String payerEmail, String courseName);
+	public List<PaymentTransaction> getTransactionsByEmailAndCourse(String payerEmail, String courseName, String batchId);
 
 	public PaymentTransactionResponse createRequestInstallment(PaymentTransactionRequest paymentTransactionRequest);
 
@@ -30,9 +30,13 @@ public interface RazorpayServiceInterface {
 
 	public List<PaymentTransactionSummaryResponse> getAllPaymentTransactions();
 
-	public InstallmentStatusResponse getLatestStatus(String studentId, String courseName);
+	public InstallmentStatusResponse getLatestStatus(String studentId, String courseName, String batchId);
 
 	List<PaymentRequest> getDashboardOrders(String email);
 
 	public String createOrder(Double amount, String studentId, String courseName, String batchId);
+
+	PaymentTransaction getTransactionById(Long transactionId);
+
+	public void deletePaymentById(Long id);
 }

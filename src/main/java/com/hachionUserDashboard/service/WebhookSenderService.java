@@ -12,7 +12,12 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.hachionUserDashboard.dto.AskQueryWebhookRequest;
+import com.hachionUserDashboard.dto.TalkToOurAdvisorRequest;
 import com.hachionUserDashboard.entity.Enroll;
+import com.hachionUserDashboard.entity.FaqQuery;
+import com.hachionUserDashboard.entity.PaymentTransaction;
+import com.hachionUserDashboard.entity.Query;
 import com.hachionUserDashboard.entity.RegisterStudent;
 import com.hachionUserDashboard.entity.RequestBatch;
 
@@ -30,6 +35,11 @@ public class WebhookSenderService {
 	private static final String REMINDER_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQA8ccVOlE/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=xlniHAkMsFirxdEnt45vibQWPuniiOxTCBJzZL9yImU";
 
 	private static final String WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQA6ewjlUA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=6Ky6FWJuoONB7vBZuwXqNsAb9uaT_Lkcegj5cF25_2c";
+
+	private static final String ASK_A_QUERY = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
+	private static final String REQUEST_INSTALLMENT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAAAQsgUn_0/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=NanGSY8MMpEk59rTvI1L_GW9dKRYQqySb22w0L8qm7w";
+
+	private static final String CORPORTATE_TRAINIG = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
 
 	public void sendRegistrationDetailsOnline(RegisterStudent student) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -53,7 +63,7 @@ public class WebhookSenderService {
 			System.err.println("❌ Failed to send webhook: " + e.getMessage());
 		}
 	}
-	
+
 	public void sendRegistrationDetailsOffline(RegisterStudent student) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
@@ -143,46 +153,36 @@ public class WebhookSenderService {
 	}
 
 	public void sendRequestBatchDetailsForCourse(RequestBatch requestBatch) {
-	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
-	    // Extract only timezone (last part)
-	    String fullTime = requestBatch.getTime_zone();     // e.g., "07:00 PM CST"
-	    String[] parts = fullTime.split(" ");
-	    String timeZoneOnly = parts[parts.length - 1];      // e.g., "CST"
+		// Extract only timezone (last part)
+		String fullTime = requestBatch.getTime_zone(); // e.g., "07:00 PM CST"
+		String[] parts = fullTime.split(" ");
+		String timeZoneOnly = parts[parts.length - 1]; // e.g., "CST"
 
-	    String message = String.format(
-	        "📢 *Student Requesting for %s Request Batch!*\n\n" +
-	        "*User Name:* %s\n" +
-	        "*Email:* %s\n" +
-	        "*Mobile:* %s\n" +
-	        "*Country:* %s\n" +
-	        "*Preferred Mode:* %s\n" +
-	        "*Course:* %s\n" +
-	        "*Time Zone:* %s\n" +
-	        "*Requested On:* %s",
-	        requestBatch.getMode(),
-	        requestBatch.getUserName(),
-	        requestBatch.getEmail(),
-	        requestBatch.getMobile(),
-	        requestBatch.getCountry(),
-	        requestBatch.getMode(),
-	        requestBatch.getCourseName(),
-	        timeZoneOnly,                                   // only CST / IST etc
-	        requestBatch.getDate().format(formatter)
-	    );
+		String message = String.format(
+				"📢 *Student Requesting for %s Request Batch!*\n\n" + "*User Name:* %s\n" + "*Email:* %s\n"
+						+ "*Mobile:* %s\n" + "*Country:* %s\n" + "*Preferred Mode:* %s\n" + "*Course:* %s\n"
+						+ "*Time Zone:* %s\n" + "*Requested On:* %s",
+				requestBatch.getMode(), requestBatch.getUserName(), requestBatch.getEmail(), requestBatch.getMobile(),
+				requestBatch.getCountry(), requestBatch.getMode(), requestBatch.getCourseName(), timeZoneOnly, // only
+																												// CST /
+																												// IST
+																												// etc
+				requestBatch.getDate().format(formatter));
 
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.setContentType(MediaType.APPLICATION_JSON);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
 
-	    String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
-	    HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+		String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
+		HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
-	    try {
-	        restTemplate.postForEntity(REQUEST_BATCH_WEBHOOK_URL, entity, String.class);
-	        System.out.println("✅ Request batch webhook sent successfully.");
-	    } catch (Exception e) {
-	        System.err.println("❌ Failed to send request batch webhook: " + e.getMessage());
-	    }
+		try {
+			restTemplate.postForEntity(REQUEST_BATCH_WEBHOOK_URL, entity, String.class);
+			System.out.println("✅ Request batch webhook sent successfully.");
+		} catch (Exception e) {
+			System.err.println("❌ Failed to send request batch webhook: " + e.getMessage());
+		}
 	}
 
 	public void sendToWorkspace(String userMessage, String botResponse) {
@@ -334,8 +334,7 @@ public class WebhookSenderService {
 				.append(safeTotal).append(")*\n").append("Due Date: ").append(safeDueDate).append("\n")
 				.append("Last Payment: ").append(safeReceived).append("\n").append("Last Payment Date: ")
 				.append(safePayDate).append("\n").append("Training Coordinator: ").append(trainingCoordinator)
-				.append("\n\n")
-				.append("*************************");
+				.append("\n\n").append("*************************");
 
 		postText(REMINDER_WEBHOOK_URL, sb.toString());
 	}
@@ -358,4 +357,124 @@ public class WebhookSenderService {
 		return "🔔 Payment Reminder";
 	}
 
+	public void sendToWebhook(AskQueryWebhookRequest req) {
+
+		RestTemplate restTemplate = new RestTemplate();
+
+		// Build message text exactly like you want
+		String messageText = "📩 *Lead enquiry from Ask a Query form:*\n\n" + "*Email:* " + safe(req.getEmail()) + "\n"
+				+ "*Phone:* " + safe(req.getPhone()) + "\n" + "*Comments:* " + safe(req.getComments()) + "\n"
+				+ "*Location:* " + safe(req.getLocation());
+
+		// Google Chat expects: { "text": "message" }
+		Map<String, String> payload = new HashMap<>();
+		payload.put("text", messageText);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<Map<String, String>> entity = new HttpEntity<>(payload, headers);
+
+		restTemplate.postForEntity(ASK_A_QUERY, entity, String.class);
+	}
+
+	private String safe(String v) {
+		return (v == null || v.isBlank()) ? "N/A" : v;
+	}
+
+	public void sendInstallmentRequestDetails(PaymentTransaction transaction) {
+
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
+		String formattedDate = transaction.getRequestDate() != null ? transaction.getRequestDate().format(formatter)
+				: "N/A";
+
+		String message = String.format(
+				"💳 *New Installment Enquiry Received!*\n\n" + "*Name:* %s\n" + "*Email:* %s\n"
+						+ "*Installments Requested:* %s\n" + "*Course:* %s\n" + "*Request Date:* %s",
+				transaction.getStudentName(), transaction.getPayerEmail(), transaction.getNumSelectedInstallments(),
+				transaction.getCourseName(), formattedDate);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
+
+		HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+
+		try {
+			restTemplate.postForEntity(REQUEST_INSTALLMENT_WEBHOOK_URL, entity, String.class);
+			System.out.println("✅ Installment webhook sent successfully.");
+		} catch (Exception e) {
+			System.err.println("❌ Failed to send installment webhook: " + e.getMessage());
+		}
+	}
+
+	public void sendCorporateTrainingLead(TalkToOurAdvisorRequest request) {
+
+		String message = String.format(
+				"🏢 *New Lead – Corporate Training*\n\n" + "🏢 *Company:* %s\n" + "👤 *Name:* %s\n" + "📧 *Email:* %s\n"
+						+ "📞 *Mobile:* %s\n" + "📘 *Course:* %s\n" + "💬 *Comment:* %s",
+				request.getCompanyName(), request.getFullName(), request.getEmailId(), request.getMobileNumber(),
+				request.getTrainingCourse(), request.getComments());
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
+
+		HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+
+		try {
+			restTemplate.postForEntity(CORPORTATE_TRAINIG, entity, String.class);
+			System.out.println("✅ Corporate Training Lead webhook sent successfully.");
+		} catch (Exception e) {
+			System.err.println("❌ Failed to send Corporate Training Lead webhook: " + e.getMessage());
+		}
+	}
+
+	public void sendContactUsLead(Query query) {
+
+		String message = String.format(
+				"📩 *Someone trying to reach thru – Contact Us Form*\n\n" + "👤 *Name:* %s\n" + "📧 *Email:* %s\n"
+						+ "📞 *Mobile:* %s\n" + "💬 *Comment:* %s",
+				safe(query.getName()), safe(query.getEmail()), safe(query.getMobile()), safe(query.getComment()));
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
+
+		HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+
+		try {
+			restTemplate.postForEntity(REQUEST_INSTALLMENT_WEBHOOK_URL, entity, String.class); // or CONTACT_US webhook
+																								// URL
+			System.out.println("✅ Contact Us Lead webhook sent successfully.");
+		} catch (Exception e) {
+			System.err.println("❌ Failed to send Contact Us Lead webhook: " + e.getMessage());
+		}
+	}
+
+	public void sendFaqAskQuestionLead(FaqQuery faqQuery) {
+
+		String message = String.format(
+				"❓ *New Question from – FAQ Ask a Question form*\n\n" + "👤 *Name:* %s\n" + "📧 *Email:* %s\n"
+						+ "💬 *Comment:* %s",
+				safe(faqQuery.getName()), safe(faqQuery.getEmailId()), safe(faqQuery.getMessage()));
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
+
+		HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+
+		try {
+			restTemplate.postForEntity(CORPORTATE_TRAINIG, entity, String.class); // or a dedicated FAQ webhook URL
+			System.out.println("✅ FAQ Ask a Question webhook sent successfully.");
+		} catch (Exception e) {
+			System.err.println("❌ Failed to send FAQ Ask a Question webhook: " + e.getMessage());
+		}
+	}
 }

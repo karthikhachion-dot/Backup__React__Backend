@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -50,6 +51,7 @@ import com.hachionUserDashboard.dto.UserProfileUpdateResponse;
 import com.hachionUserDashboard.dto.UserRegistrationRequest;
 import com.hachionUserDashboard.entity.RegisterStudent;
 import com.hachionUserDashboard.repository.RegisterStudentRepository;
+import com.hachionUserDashboard.service.WebhookSenderService;
 
 import Response.LoginResponse;
 import Response.UserProfileResponse;
@@ -91,6 +93,9 @@ public class UserController {
 
 	@Value("${app.cookies.secure:false}")
 	private boolean cookieSecure;
+
+	@Autowired
+	private WebhookSenderService webhookSenderService;
 
 	private String base() {
 		return feBase.endsWith("/") ? feBase.substring(0, feBase.length() - 1) : feBase;
@@ -231,9 +236,10 @@ public class UserController {
 			if (avatarCookie != null) {
 				return ResponseEntity.status(HttpStatus.FOUND)
 						.header(org.springframework.http.HttpHeaders.SET_COOKIE, avatarCookie.toString())
-						.location(new java.net.URI("https://hachion.co")).build();
+						.location(new java.net.URI("https://hachion.co/phone-number")).build();
 			} else {
-				return ResponseEntity.status(HttpStatus.FOUND).location(new java.net.URI("https://hachion.co")).build();
+				return ResponseEntity.status(HttpStatus.FOUND).location(new URI("https://hachion.co/phone-number"))
+						.build();
 			}
 
 		} else {
@@ -377,23 +383,64 @@ public class UserController {
 		}
 	}
 
-	@PostMapping("/api/v1/user/complete-signup")
+//	@PostMapping("/api/v1/user/complete-signup")
+//	public ResponseEntity<?> completeSignup(@AuthenticationPrincipal OidcUser oidc,
+//			@RequestBody Map<String, String> body) {
+//		if (oidc == null)
+//			return ResponseEntity.status(401).build();
+//		String email = oidc.getEmail();
+//		String phone = body.get("phone");
+//
+//		RegisterStudent user = registerStudentRepository.findByEmail(email);
+//		if (user == null || !"PENDING".equalsIgnoreCase(user.getStatus())) {
+//			return ResponseEntity.badRequest().body(Map.of("error", "No pending signup for this user"));
+//		}
+//
+//		// validate phone here …
+////	  user.setPhone(phone);
+//		user.setStatus("ACTIVE");
+//		registerStudentRepository.save(user);
+//
+//		return ResponseEntity.ok(Map.of("ok", true));
+//	}
+
+	@PostMapping("/complete-signup")
 	public ResponseEntity<?> completeSignup(@AuthenticationPrincipal OidcUser oidc,
 			@RequestBody Map<String, String> body) {
 		if (oidc == null)
 			return ResponseEntity.status(401).build();
+
 		String email = oidc.getEmail();
-		String phone = body.get("phone");
+		String phone = body.get("mobile");
+		String whatsapp = body.get("whatsapp");
+		String country = body.get("country");
 
 		RegisterStudent user = registerStudentRepository.findByEmail(email);
-		if (user == null || !"PENDING".equalsIgnoreCase(user.getStatus())) {
-			return ResponseEntity.badRequest().body(Map.of("error", "No pending signup for this user"));
+
+		if (user == null) {
+			return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
 		}
 
-		// validate phone here …
-//	  user.setPhone(phone);
+		// ✅ Save to entity
+		user.setMobile(phone);
+		user.setWhatsapp(whatsapp);
+		user.setCountry(country);
+
+		// Optional but recommended
 		user.setStatus("ACTIVE");
-		registerStudentRepository.save(user);
+
+		RegisterStudent savedRegisterStudent = registerStudentRepository.save(user);
+
+		// ✅ Use existing date if present, otherwise use today (ONLY for webhook, no DB
+		// save again)
+		LocalDate webhookDate = savedRegisterStudent.getDate() != null ? savedRegisterStudent.getDate()
+				: LocalDate.now();
+
+		// Set it only in memory so webhook won't fail
+		savedRegisterStudent.setDate(webhookDate);
+
+		// ✅ Send webhook safely
+		webhookSenderService.sendRegistrationDetailsOnline(savedRegisterStudent);
 
 		return ResponseEntity.ok(Map.of("ok", true));
 	}
@@ -411,12 +458,11 @@ public class UserController {
 		return userService.updateProfile(request, profileImage);
 	}
 
-	  @PatchMapping("/social-links")
-	    public ResponseEntity<SocialLinksUpdateResponse> updateSocialLinksByEmail(
-	            @RequestParam String email,
-	            @RequestBody SocialLinksUpdateRequest request) {
+	@PatchMapping("/social-links")
+	public ResponseEntity<SocialLinksUpdateResponse> updateSocialLinksByEmail(@RequestParam String email,
+			@RequestBody SocialLinksUpdateRequest request) {
 
-		  SocialLinksUpdateResponse updated = userService.updateSocialLinksByEmail(email, request);
-	        return ResponseEntity.ok(updated);
-	    }
+		SocialLinksUpdateResponse updated = userService.updateSocialLinksByEmail(email, request);
+		return ResponseEntity.ok(updated);
+	}
 }

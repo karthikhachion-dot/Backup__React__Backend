@@ -4,10 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.hachionUserDashboard.entity.Enroll;
+
+import jakarta.transaction.Transactional;
 
 public interface EnrollRepository extends JpaRepository<Enroll, Integer> {
 
@@ -87,5 +90,23 @@ public interface EnrollRepository extends JpaRepository<Enroll, Integer> {
 	@Query(value = " SELECT amount FROM enroll WHERE student_id = :studentId AND course_name = :courseName AND batch_id = :batchId ORDER BY id DESC LIMIT 1", nativeQuery = true)
 	Double findLatestAmount(@Param("studentId") String studentId, @Param("courseName") String courseName,
 			@Param("batchId") String batchId);
+
+	@Query(value = """
+			    SELECT COUNT(*)
+			    FROM enroll
+			    WHERE student_id = :studentId
+			      AND course_name = :courseName
+			      AND mode = 'Self-Paced Learning'
+			""", nativeQuery = true)
+	Long countSelfPacedEnrollment(@Param("studentId") String studentId, @Param("courseName") String courseName);
+
+	@Modifying
+	@Transactional
+	@Query(value = "UPDATE enroll SET amount = COALESCE(amount, 0) + :amount WHERE student_id = :studentId AND course_name = :courseName AND batch_id = :batchId", nativeQuery = true)
+	int updateAmountByStudentCourseBatchNative(@Param("amount") Double amount, @Param("studentId") String studentId,
+			@Param("courseName") String courseName, @Param("batchId") String batchId);
+	
+	@Query(value = "SELECT mode FROM enroll WHERE student_id = :studentId AND course_name = :courseName ORDER BY id DESC LIMIT 1", nativeQuery = true)
+	String findModeByStudentAndCourse(@Param("studentId") String studentId, @Param("courseName") String courseName);
 
 }

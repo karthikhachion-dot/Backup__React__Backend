@@ -1,44 +1,3 @@
-//package com.hachionUserDashboard.service;
-//
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.stereotype.Service;
-//
-//import com.hachionUserDashboard.dto.CertificateRequest;
-//import com.hachionUserDashboard.entity.CertificateEntity;
-//import com.hachionUserDashboard.repository.CertificateRepository;
-//
-//import Service.CertificateService;
-//
-//@Service
-//public class Certificateimp implements CertificateService {
-//	
-//	@Autowired
-//	private CertificateRepository certificateRepository;
-//	
-//
-//	
-//	 public CertificateEntity generateCertificate(CertificateRequest request) {
-//	        // Save data
-//	        CertificateEntity entity = new CertificateEntity();
-//	        entity.setStudentId(request.getStudentId());
-//	        entity.setStudentName(request.getStudentName());
-//	        entity.setStudentEmail(request.getStudentEmail());
-//	        entity.setCourseName(request.getCourseName());
-//	        entity.setCompletionDate(request.getCompletionDate());
-//	        entity.setStatus(request.getStatus());
-//
-//	        // We'll fill this after generating the PDF
-//	        entity.setCertificatePath("To be updated");
-//
-//	        return certificateRepository.save(entity);
-//	    }
-//
-//	 public void updateCertificatePath(Long certificateId, String path) {
-//		    CertificateEntity entity = certificateRepository.findByCertificateId(certificateId);
-//		    entity.setCertificatePath(path);
-//		    certificateRepository.save(entity);
-//		}
-//}
 package com.hachionUserDashboard.service;
 
 import java.io.File;
@@ -67,6 +26,9 @@ import com.hachionUserDashboard.dto.CertificateRequest;
 import com.hachionUserDashboard.dto.CertificatesResponse;
 import com.hachionUserDashboard.entity.CertificateEntity;
 import com.hachionUserDashboard.repository.CertificateDetailsRepository;
+import com.hachionUserDashboard.repository.CourseRepository;
+import com.hachionUserDashboard.repository.EnrollRepository;
+import com.hachionUserDashboard.repository.ToolsRepository;
 
 import Service.CertificateService;
 import jakarta.mail.MessagingException;
@@ -77,41 +39,61 @@ public class Certificateimp implements CertificateService {
 
 	@Autowired
 	private CertificateDetailsRepository certificateRepository;
-	
+
 	@Autowired
 	private EmailService emailService;
 
 	@Value("${certificate.base-path}")
 	private String certificateBasePath;
 
+	@Autowired
+	private CourseRepository courseRepository;
+	
+	@Autowired
+	private EnrollRepository enrollRepository;
+	
+	@Autowired
+	private ToolsRepository toolsRepository;
+
+	
+	private String sanitizeText(String text) {
+	    if (text == null) return "";
+
+	    return text
+	            .replace("\u202F", " ")   
+	            .replace("\u00A0", " ")   
+	            .replace("\u2011", "-")   
+	            .replace("\u2013", "-")   
+	            .replace("\u2014", "-")   
+	            .replaceAll("[^\\x00-\\x7F]", ""); 
+	}
+	
 	@Override
 	public CertificateEntity generateCertificate(CertificateRequest request) {
 
-		 Optional<CertificateEntity> existingEntity = certificateRepository
-			        .findByStudentIdAndCourseNameAndCompletionDate(
-			            request.getStudentId(),
-			            request.getCourseName()
-			        );
+		Optional<CertificateEntity> existingEntity = certificateRepository
+				.findByStudentIdAndCourseName(request.getStudentId(), request.getCourseName());
 
-			    
-			    if (existingEntity.isPresent()) {
-			        System.out.println("Certificate record already exists for studentId: " + request.getStudentId());
-			        return existingEntity.get();
-			    }
-		
-			    String path = generateCertificatePdf(request.getStudentName(), request.getStudentId(), request.getCourseName(),
-						request.getCompletionDate());
-			    
-			    if (path == null) {
-			        throw new RuntimeException("PDF generation failed. Certificate will not be saved.");
-			    }
-			    
+		if (existingEntity.isPresent()) {
+
+			return existingEntity.get();
+		}
+
+		String path = generateCertificatePdf(request.getStudentName(), request.getStudentId(), request.getCourseName(),
+				request.getCompletionDate());
+
+		if (path == null) {
+			throw new RuntimeException("PDF generation failed. Certificate will not be saved.");
+		}
+
 		CertificateEntity entity = new CertificateEntity();
 		entity.setStudentId(request.getStudentId());
 		entity.setStudentName(request.getStudentName());
 		entity.setStudentEmail(request.getStudentEmail());
 		entity.setCourseName(request.getCourseName());
-		entity.setCompletionDate(request.getCompletionDate());
+
+		LocalDate parsedDate = LocalDate.parse(request.getCompletionDate().trim());
+		entity.setCompletionDate(parsedDate.toString());
 		entity.setStatus(request.getStatus());
 		entity.setGrade(request.getGrade());
 
@@ -122,464 +104,335 @@ public class Certificateimp implements CertificateService {
 
 		return entity;
 	}
-
 	public String generateCertificatePdf(String studentName, String studentId, String courseName,
-			String completionDate) {
+	        String completionDate) {
 
-		String folderPath = certificateBasePath;
-//		String outputPdfPath = folderPath + studentId + "_" + courseName.replaceAll("\\s+", "_") + "_" + completionDate.replaceAll("[-/]", "_") + "_Certificate.pdf";
-		String outputPdfPath = folderPath + studentId + "_" + courseName.replaceAll("\\s+", "_") + "_Certificate.pdf";
+		studentName = sanitizeText(studentName);
+		courseName = sanitizeText(courseName);
+		studentId = sanitizeText(studentId);
+		completionDate = sanitizeText(completionDate);
+		
+		
+	    String folderPath = certificateBasePath;
+	    String outputPdfPath = folderPath + studentId + "_" + courseName.replaceAll("\\s+", "_") + "_Certificate.pdf";
+	    String inputPdfPath = folderPath + "Hachion's CertificateFinal.pdf";
 
-		String inputPdfPath = folderPath + "Hachion's CertificateFinal.pdf";
+	    try {
+	        File folder = new File(folderPath);
+	        if (!folder.exists()) {
+	            folder.mkdirs();
+	        }
 
-		try {
-			File folder = new File(folderPath);
-			if (!folder.exists()) {
-				folder.mkdirs();
-			}
-			 File outputFile = new File(outputPdfPath);
-		        if (outputFile.exists()) {
-		            System.out.println("Certificate already exists for studentId " + studentId + " and course " + courseName);
-		            return outputPdfPath;
-		        }
+	        File outputFile = new File(outputPdfPath);
+	        if (outputFile.exists()) {
+	            return outputPdfPath;
+	        }
 
-			PDDocument document = PDDocument.load(new File(inputPdfPath));
-			document.setAllSecurityToBeRemoved(true);
-			PDPage page = document.getPage(0);
-			PDRectangle mediaBox = page.getMediaBox();
-			float pageWidth = mediaBox.getWidth();
-			float pageHeight = mediaBox.getHeight();
-			System.out.println("Landscape page size: " + pageWidth + " x " + pageHeight);
+	        PDDocument document = PDDocument.load(new File(inputPdfPath));
+	        document.setAllSecurityToBeRemoved(true);
 
-			PDPageContentStream contentStream = new PDPageContentStream(document, page,
-					PDPageContentStream.AppendMode.APPEND, true);
+	        PDPage page = document.getPage(0);
+	        PDRectangle box = page.getCropBox();
+	        float pageWidth = box.getWidth();
+	        float pageHeight = box.getHeight();
+	        int rotation = page.getRotation();
 
-			PDFont fontBold = PDType1Font.HELVETICA_BOLD;
-			PDFont fontItalic = PDType1Font.HELVETICA_OBLIQUE;
-			PDFont fontBoldForCourseName = PDType1Font.TIMES_BOLD;
+	        PDPageContentStream contentStream = new PDPageContentStream(document, page,
+	                PDPageContentStream.AppendMode.APPEND, true, true);
 
-			int nameFontSize = 46;
-			int studentIdFontSize = 14;
-			int courseFontSize = 45;
-			int dateFontSize = 14;
+	        if (rotation == 90) {
+	            contentStream.transform(new org.apache.pdfbox.util.Matrix(0, 1, -1, 0, pageHeight, 0));
+	        } else if (rotation == 180) {
+	            contentStream.transform(new org.apache.pdfbox.util.Matrix(-1, 0, 0, -1, pageWidth, pageHeight));
+	        } else if (rotation == 270) {
+	            contentStream.transform(new org.apache.pdfbox.util.Matrix(0, -1, 1, 0, 0, pageWidth));
+	        }
 
-			float nameWidth = fontBold.getStringWidth(studentName) / 1000 * nameFontSize;
-			float courseWidth = fontBoldForCourseName.getStringWidth(courseName) / 1000 * courseFontSize;
 
-			contentStream.beginText();
-			contentStream.setFont(fontBold, nameFontSize);
-			contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f);
-			contentStream.newLineAtOffset((pageWidth - nameWidth) / 2, pageHeight - 170);
-			contentStream.showText(studentName);
-			contentStream.endText();
+	        
+	        PDFont fontBold = PDType1Font.HELVETICA_BOLD;
+	        PDFont fontItalic = PDType1Font.HELVETICA;
+	        PDFont fontBoldForCourseName = PDType1Font.HELVETICA_BOLD;
 
-			String studentIdText = "STUDENTID : " + studentId;
-			float studentIdWidth = fontBold.getStringWidth(studentIdText) / 1000 * studentIdFontSize;
+	        int nameFontSize = 24;
+	        int courseFontSize = 24;
+	        int dateFontSize = 14;
+	        int aboutCourseFontSize = 12;
 
-			contentStream.beginText();
-			contentStream.setFont(fontBold, studentIdFontSize);
-			contentStream.newLineAtOffset((pageWidth - studentIdWidth) / 2, pageHeight - 210);
-			contentStream.showText(studentIdText);
-			contentStream.endText();
+	        float nameWidth = fontBold.getStringWidth(studentName) / 1000 * nameFontSize;
+	        float courseWidth = fontBoldForCourseName.getStringWidth(courseName) / 1000 * courseFontSize;
 
-			contentStream.beginText();
-			contentStream.setFont(fontBoldForCourseName, courseFontSize);
-			contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f);
-			contentStream.newLineAtOffset((pageWidth - courseWidth) / 2, pageHeight / 2 - 15);
-			contentStream.showText(courseName);
-			contentStream.endText();
+	        // --- Hours from course table ---
+	        String aboutCourse = sanitizeText(courseRepository.findAboutCourseByCourseName(courseName));
+	        String classesStr = aboutCourse != null ? aboutCourse : "0";
+	        int totalHours = 0;
+	        try {
+	            totalHours = Integer.parseInt(classesStr);
+	        } catch (NumberFormatException e) {
+	            totalHours = 0;
+	        }
 
-			LocalDate date = LocalDate.parse(completionDate);
-			String formattedDate = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-			contentStream.beginText();
-			contentStream.setFont(fontItalic, dateFontSize);
-			contentStream.newLineAtOffset(100, 140);
-			contentStream.showText(formattedDate);
-			contentStream.endText();
+	        String mode = sanitizeText(enrollRepository.findModeByStudentAndCourse(studentId, courseName));
 
-			contentStream.close();
-			document.save(outputPdfPath);
-			document.close();
+	        if (mode == null || mode.trim().isEmpty()) {
+	            mode = "Instructor-Led Training";
+	        }
 
-			return outputPdfPath;
+	        String safeMode = sanitizeText(mode.trim());
+	        
+	        String aboutText =
+	            "This is to certify that the above-named candidate has successfully completed the " +
+	            courseName +
+	            " Certification Program conducted by Hachion, comprising " +
+	            totalHours +
+	            " hours of " + safeMode + ", and has demonstrated proficiency in core concepts " +
+	            "and practical applications aligned with industry standards.";
+	        
 
-		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
-		}
+	        // =======================
+	        // 1) Student Name
+	        // =======================
+	        contentStream.beginText();
+	        contentStream.setFont(fontBold, nameFontSize);
+	        contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f);
+
+	        float whiteAreaStartXForName = pageWidth * 0.28f;
+	        float whiteAreaWidthForName = pageWidth * 0.70f;
+	        float nameX = whiteAreaStartXForName + (whiteAreaWidthForName - nameWidth) / 2;
+	        contentStream.newLineAtOffset(nameX, pageHeight * 0.57f);
+
+	        contentStream.showText(studentName);
+	        contentStream.endText();
+
+	        // =======================
+	        // 3) About text (wrapped, bold parts)
+	        // =======================
+	        float safeWhiteStartX = pageWidth * 0.35f;
+	        float safeWhiteWidth = pageWidth * 0.55f;
+
+	        String[] words = aboutText.split(" ");
+	        List<String> lines = new ArrayList<>();
+	        StringBuilder currentLine = new StringBuilder();
+
+	        for (String word : words) {
+	            String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
+	            float testWidth = fontItalic.getStringWidth(testLine) / 1000 * aboutCourseFontSize;
+
+	            if (testWidth > safeWhiteWidth) {
+	                lines.add(currentLine.toString());
+	                currentLine = new StringBuilder(word);
+	            } else {
+	                currentLine = new StringBuilder(testLine);
+	            }
+	        }
+
+	        if (currentLine.length() > 0) {
+	            lines.add(currentLine.toString());
+	        }
+
+	        float startY = pageHeight * 0.48f;
+	        float lineGap = aboutCourseFontSize + 4;
+
+	        String hoursPhrase = totalHours + " hours";
+
+
+	        String modePhrase = mode.trim();
+	        
+	        for (int i = 0; i < lines.size(); i++) {
+	            String line = lines.get(i);
+
+	            float lineWidth = fontItalic.getStringWidth(line) / 1000 * aboutCourseFontSize;
+	            float lineX = safeWhiteStartX + (safeWhiteWidth - lineWidth) / 2;
+	            float lineY = startY - (i * lineGap);
+
+	            contentStream.beginText();
+	            contentStream.setNonStrokingColor(0f, 0f, 0f);
+	            contentStream.newLineAtOffset(lineX, lineY);
+
+	            String text = line;
+
+	            
+	            String remaining = text;
+
+	            
+	         // 1) Course name (Force Bold Properly)
+	            if (remaining.contains(courseName)) {
+
+	                int index = remaining.indexOf(courseName);
+
+	                String before = remaining.substring(0, index);
+	                String after = remaining.substring(index + courseName.length());
+
+	                // Print text before course name
+	                contentStream.setFont(fontItalic, aboutCourseFontSize);
+	                contentStream.showText(before);
+
+	                // Print course name in bold
+	                contentStream.setFont(PDType1Font.HELVETICA_BOLD, aboutCourseFontSize);
+	                contentStream.showText(courseName);
+
+	                remaining = after;
+	            }
+	            // 2) Hours
+	            if (remaining.contains(hoursPhrase)) {
+	                String[] p = remaining.split(java.util.regex.Pattern.quote(hoursPhrase), 2);
+
+	                contentStream.setFont(fontItalic, aboutCourseFontSize);
+	                contentStream.showText(p[0]);
+
+	                contentStream.setFont(fontBold, aboutCourseFontSize);
+	                contentStream.showText(hoursPhrase);
+
+	                remaining = p.length > 1 ? p[1] : "";
+	            }
+
+	           
+	            if (remaining.contains(modePhrase)) {
+	                String[] p = remaining.split(java.util.regex.Pattern.quote(modePhrase), 2);
+
+	                contentStream.setFont(fontBold, aboutCourseFontSize);
+	                contentStream.showText(p[0]);
+
+	                
+	                contentStream.setFont(fontBold, aboutCourseFontSize);
+	                contentStream.showText(modePhrase);
+
+	                remaining = p.length > 1 ? p[1] : "";
+	            }
+
+	            // 4) Whatever is left
+	            contentStream.setFont(fontItalic, aboutCourseFontSize);
+	            contentStream.showText(remaining);
+
+	            contentStream.endText();
+	        }
+
+
+	        // =======================
+	        // 5) Student ID
+	        // =======================
+	        contentStream.beginText();
+	        contentStream.setFont(fontBold, 12);
+	        contentStream.setNonStrokingColor(0f, 0f, 0f);
+	        contentStream.newLineAtOffset(pageWidth * 0.39f, pageHeight * 0.10f);
+	        contentStream.showText(studentId);
+	        contentStream.endText();
+	        
+	     // =======================
+	     // 6) Left Side: Key Skills (Static)
+	     // =======================
+	        PDFont skillsFont = PDType1Font.HELVETICA;
+	     int skillsFontSize = 14;
+
+	     
+	     contentStream.setNonStrokingColor(1f, 1f, 1f);
+
+	     
+	     float skillsStartX = pageWidth * 0.05f;   
+	     float skillsStartY = pageHeight * 0.41f;  
+	     float lineGapSkills = 20;
+
+	     List<String> skillsList = toolsRepository.findToolNamesByCourseName(courseName);
+
+	     if (skillsList != null) {
+	         skillsList = skillsList.stream()
+	                 .filter(skill -> skill != null && !skill.trim().equalsIgnoreCase("N/A"))
+	                 .map(this::sanitizeText)
+	                 .filter(skill -> !skill.trim().isEmpty())
+	                 .toList();
+	     }
+
+	     if (skillsList != null && !skillsList.isEmpty()) {
+	         for (int i = 0; i < skillsList.size(); i++) {
+	             contentStream.beginText();
+	             contentStream.setFont(skillsFont, skillsFontSize);
+	             contentStream.newLineAtOffset(skillsStartX, skillsStartY - (i * lineGapSkills));
+	             contentStream.showText(skillsList.get(i));
+	             contentStream.endText();
+	         }
+	     }
+
+	     LocalDate date2 = LocalDate.parse(completionDate);
+
+	    
+	     String formattedDate2 = date2.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+	     String footerText = 
+	             "    Completion Date: " + formattedDate2;
+
+	     contentStream.beginText();
+	     contentStream.setFont(fontBold, 11);
+	     contentStream.setNonStrokingColor(0f, 0f, 0f);
+
+	     
+	     contentStream.newLineAtOffset(pageWidth * 0.72f, pageHeight * 0.10f);
+
+	     contentStream.showText(footerText);
+	     contentStream.endText();
+
+	        contentStream.close();
+	        document.save(outputPdfPath);
+	        document.close();
+
+	        return outputPdfPath;
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	        throw new RuntimeException("Error while generating certificate PDF: " + e.getMessage(), e);
+	    }
 	}
 
 	@Override
-	 public void sendCertificateByEmail(Long certificateId) throws IOException, MessagingException {
-        CertificateEntity certificate = certificateRepository.findById(certificateId)
-                .orElseThrow(() -> new RuntimeException("Certificate not found"));
+	public void sendCertificateByEmail(Long certificateId) throws IOException, MessagingException {
+		CertificateEntity certificate = certificateRepository.findById(certificateId)
+				.orElseThrow(() -> new RuntimeException("Certificate not found"));
 
-        String email = certificate.getStudentEmail();
-        String filePath = certificate.getCertificatePath(); 
+		String email = certificate.getStudentEmail();
+		String filePath = certificate.getCertificatePath();
 
-        byte[] pdfBytes = Files.readAllBytes(Paths.get(filePath));
+		byte[] pdfBytes = Files.readAllBytes(Paths.get(filePath));
 
-        emailService.sendEmailWithAttachment(email, pdfBytes, "Your Course Certificate", "Please find attached your certificate.");
-    }
+		emailService.sendEmailWithAttachment(email, pdfBytes, "Your Course Certificate",
+				"Please find attached your certificate.");
+	}
+
 	@Override
-    public List<CertificateEntity> getAllCertificates() {
-        return certificateRepository.findAll();
-    }
+	public List<CertificateEntity> getAllCertificates() {
+		return certificateRepository.findAll();
+	}
 
 	@Override
 	public String getUserById(Long certificateId) {
-		// TODO Auto-generated method stub
+
 		return null;
 	}
 
 	public List<CertificateEntity> getCertificatesByStudentName(String studentName) {
-	    List<CertificateEntity> list = certificateRepository.findByStudentNameNative(studentName);
-	    return list != null ? list : new ArrayList<>();
+		List<CertificateEntity> list = certificateRepository.findByStudentNameNative(studentName);
+		return list != null ? list : new ArrayList<>();
 	}
-	
-	 @Transactional
-	    public CertificatesResponse getByEmail(String email) {
-	        var rows = certificateRepository.findAllByStudentEmail(email);
-	        List<CertificateDTO> items = rows.stream()
-	                .map(r -> new CertificateDTO(
-	                        r.getId(),
-	                        r.getCourseName(),
-	                        r.getGrade(),
-	                        r.getIssueDate(),
-	                        // If you have a human-friendly "certificate code", map it here.
-	                        // For now we mirror the PK as a string so FE has something to show.
-	                        r.getId() != null ? "CERT-" + r.getId() : null,
-	                        r.getCertificatePath()
-	                ))
-	                .collect(Collectors.toList());
 
-	        long total = certificateRepository.countByStudentEmail(email); // or items.size() if you prefer one query
-	        return new CertificatesResponse(total, items);
-	    }
+	@Transactional
+	public CertificatesResponse getByEmail(String email) {
+		var rows = certificateRepository.findAllByStudentEmail(email);
+		List<CertificateDTO> items = rows.stream()
+				.map(r -> new CertificateDTO(r.getId(), r.getCourseName(), r.getGrade(), r.getIssueDate(),
+						
+						r.getId() != null ? "CERT-" + r.getId() : null, r.getCertificatePath()))
+				.collect(Collectors.toList());
 
-	    @Transactional
-	    public long countByEmail(String email) {
-	        return certificateRepository.countByStudentEmail(email);
-	    }
-//	private String generateCertificatePdf(String studentName, String studentId, String courseName, String completionDate) {
-//	    String folderPath = "certificates";
-//	    String outputPdfPath = folderPath + "/" + studentId + "_Certificat	e.pdf";
-//	    String inputPdfPath = "src/main/resources/templates/Hachion's CertificateFinal.pdf";
-//
-//	    try {
-//	        // Ensure folder exists
-//	        File folder = new File(folderPath);
-//	        if (!folder.exists()) {
-//	            folder.mkdirs();
-//	            System.out.println("✅ 'certificates' folder created.");
-//	        }
-//
-//	        // Load the template PDF
-//	        PDDocument document = PDDocument.load(new File(inputPdfPath));
-//	        document.setAllSecurityToBeRemoved(true);
-//	        PDPage page = document.getPage(0);
-//	        PDRectangle mediaBox = page.getMediaBox(); // Get dimensions
-//	        float pageWidth = mediaBox.getWidth();
-//	        float pageHeight = mediaBox.getHeight();
-//	        System.out.println("Landscape page size: " + pageWidth + " x " + pageHeight);
-//
-//	        // Create content stream
-//	        PDPageContentStream contentStream = new PDPageContentStream(document, page,
-//	                PDPageContentStream.AppendMode.APPEND, true);
-//
-//	        // Load custom fonts from Windows Fonts directory
-//	        String fontPathBold = "C:\\Windows\\Fonts\\Agency FB.ttf";  // Bold font
-//	        String fontPathRegular = "C:\\Windows\\Fonts\\Agency FB.ttf";    // Regular font
-//	        String fontPathItalic = "C:\\Windows\\Fonts\\Agency FB.ttf"; // Italic font
-//
-//	        PDFont fontBold = PDType0Font.load(document, new File(fontPathBold));
-//	        PDFont fontRegular = PDType0Font.load(document, new File(fontPathRegular));
-//	        PDFont fontItalic = PDType0Font.load(document, new File(fontPathItalic));
-//	        
-//	        
-//
-//	        // Font sizes
-//	        int nameFontSize = 46;
-//	        int courseFontSize = 18;
-//	        int studentIdFontSize = 14;
-//	        int dateFontSize = 14;
-//
-//	        // Measure width for centering
-//	        float nameWidth = fontBold.getStringWidth(studentName) / 1000 * nameFontSize;
-//	        float courseWidth = fontRegular.getStringWidth(courseName) / 1000 * courseFontSize;
-//
-//	        // Add Student Name (Center)
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontBold, nameFontSize);
-//	        contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f); // Blue color
-//	        contentStream.newLineAtOffset((pageWidth - nameWidth) / 2, pageHeight - 170);
-//	        contentStream.showText(studentName);
-//	        contentStream.endText();
-//
-//	        // Add Student ID
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontBold, studentIdFontSize);
-//	        contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f); // Blue color
-//	        contentStream.newLineAtOffset(pageWidth / 2 - 60, pageHeight - 210);
-//	        contentStream.showText("STUDENTID : " + studentId);
-//	        contentStream.endText();
-//
-//	        // Add Course Name (Center)
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontRegular, courseFontSize);
-//	        contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f); // Blue color
-//	        contentStream.newLineAtOffset((pageWidth - courseWidth) / 2, pageHeight / 2 - 10);
-//	        contentStream.showText(courseName);
-//	        contentStream.endText();
-//
-//	        // Format Completion Date
-//	        LocalDate date = LocalDate.parse(completionDate);
-//	        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-//	        
-//	        // Add Completion Date
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontItalic, dateFontSize);
-//	        contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f); // Blue color
-//	        contentStream.newLineAtOffset(100, 140);
-//	        contentStream.showText(formattedDate);
-//	        contentStream.endText();
-//
-//	        // Finalize the content stream and save the document
-//	        contentStream.close();
-//	        document.save(outputPdfPath);
-//	        document.close();
-//
-//	        System.out.println("✅ Certificate PDF saved successfully at: " + outputPdfPath);
-//	        return outputPdfPath;
-//
-//	    } catch (IOException e) {
-//	        e.printStackTrace();
-//	        return null;
-//	    }
-//	}
+		long total = certificateRepository.countByStudentEmail(email); 
+		return new CertificatesResponse(total, items);
+	}
 
-	
+	@Transactional
+	public long countByEmail(String email) {
+		return certificateRepository.countByStudentEmail(email);
+	}
+
 	public List<CertificateEntity> findByStudentNameIgnoreCase(String studentName) {
-		// TODO Auto-generated method stub
+		
 		return null;
 	}
-
-//	private String generateCertificatePdf(String studentName, String studentId, String courseName, String completionDate) {
-//	    String folderPath = "certificates";
-//	    String outputPdfPath = folderPath + "/" + studentId + "_Certificate.pdf";
-//	    String inputPdfPath = "src/main/resources/templates/Hachion's CertificateFinal.pdf";
-//
-//	    try {
-//	        File folder = new File(folderPath);
-//	        if (!folder.exists()) {
-//	            folder.mkdirs();
-//	            System.out.println("✅ 'certificates' folder created.");
-//	        }
-//
-//	        PDDocument document = PDDocument.load(new File(inputPdfPath));
-//	        document.setAllSecurityToBeRemoved(true);
-//	        PDPage page = document.getPage(0);
-//	        PDRectangle mediaBox = page.getMediaBox();
-//	        float pageWidth = mediaBox.getWidth();
-//	        float pageHeight = mediaBox.getHeight();
-//	        System.out.println("Landscape page size: " + pageWidth + " x " + pageHeight);
-//
-//	        PDPageContentStream contentStream = new PDPageContentStream(document, page,
-//	                PDPageContentStream.AppendMode.APPEND, true);
-//
-//	        // Font and sizes
-//	        PDFont fontBold = PDType1Font.HELVETICA_BOLD;
-//	        PDFont fontRegular = PDType1Font.HELVETICA;
-//	        PDFont fontItalic = PDType1Font.HELVETICA_OBLIQUE;
-//
-//	        int nameFontSize = 18;
-//	        int courseFontSize = 14;
-//
-//	        // Measure width for centering
-//	        float nameWidth = fontBold.getStringWidth(studentName) / 1000 * nameFontSize;
-//	        float courseWidth = fontRegular.getStringWidth(courseName) / 1000 * courseFontSize;
-//
-//	        // Center Student Name
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontBold, nameFontSize);
-//	        contentStream.setNonStrokingColor(0.055f, 0.286f, 0.659f); // Apply color
-//	        contentStream.newLineAtOffset((pageWidth - nameWidth) / 2, pageHeight - 160);
-//	        contentStream.showText(studentName);
-//	        contentStream.endText();
-//
-//	        // Student ID
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontBold, 14);
-//	        contentStream.newLineAtOffset(pageWidth / 2 - 60, pageHeight - 210);
-//	        contentStream.showText("STUDENTID : " + studentId);
-//	        contentStream.endText();
-//
-//	        // Center Course Name
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontRegular, courseFontSize);
-//	        contentStream.newLineAtOffset((pageWidth - courseWidth) / 2, pageHeight / 2 - 10);
-//	        contentStream.showText(courseName);
-//	        contentStream.endText();
-//
-//	        // Completion Date
-//	        LocalDate date = LocalDate.parse(completionDate);
-//	        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-//	        contentStream.beginText();
-//	        contentStream.setFont(fontItalic, 14);
-//	        contentStream.newLineAtOffset(100, 140);
-//	        contentStream.showText(formattedDate);
-//	        contentStream.endText();
-//
-//	        contentStream.close();
-//	        document.save(outputPdfPath);
-//	        document.close();
-//
-//	        System.out.println("✅ Certificate PDF saved successfully at: " + outputPdfPath);
-//	        return outputPdfPath;
-//
-//	    } catch (IOException e) {
-//	        e.printStackTrace();
-//	        return null;
-//	    }
-//	}
-//	
-//	private String generateCertificatePdf(String studentName, String studentId, String courseName, String completionDate) {
-//	    String folderPath = "certificates";
-//	    String outputPdfPath = folderPath + "/" + studentId + "_Certificate.pdf";
-//	    String inputPdfPath = "src/main/resources/templates/Hachion's CertificatePowerpoint.pdf";
-//
-//	    try {
-//	        // Ensure folder exists
-//	        File folder = new File(folderPath);
-//	        if (!folder.exists()) {
-//	            folder.mkdirs();
-//	            System.out.println("✅ 'certificates' folder created.");
-//	        }
-//
-//	        // Load the template PDF
-//	        PDDocument document = PDDocument.load(new File(inputPdfPath));
-//	        document.setAllSecurityToBeRemoved(true);
-//	        PDPage page = document.getPage(0);
-//	        PDRectangle mediaBox = page.getMediaBox(); // Get dimensions
-//	        float pageWidth = mediaBox.getWidth();
-//	        float pageHeight = mediaBox.getHeight();
-//	        System.out.println("Landscape page size: " + pageWidth + " x " + pageHeight);
-//
-//	        PDPageContentStream contentStream = new PDPageContentStream(document, page,
-//	                PDPageContentStream.AppendMode.APPEND, true);
-//
-//	        // Add Student Name
-//	        contentStream.beginText();
-//	        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 18);
-//	        contentStream.newLineAtOffset(pageWidth / 2 - 100, pageHeight - 160); // Center top-ish
-////	        contentStream.newLineAtOffset(693, 333); // Absolute position from Paint
-//
-//	        contentStream.showText(studentName);
-//	        contentStream.endText();
-//
-//	        // Add Student ID
-//	        contentStream.beginText();
-//	        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 14);
-//	        contentStream.newLineAtOffset(pageWidth / 2 - 60, pageHeight - 210);
-//	        contentStream.showText("STUDENTID : " + studentId);
-//	        contentStream.endText();
-//
-//	        // Add Course Name
-//	        contentStream.beginText();
-//	        contentStream.setFont(PDType1Font.HELVETICA, 14);
-//	        contentStream.newLineAtOffset(pageWidth / 2 - 100, pageHeight / 2 - 10);
-//	        contentStream.showText(courseName);
-//	        contentStream.endText();
-//
-//	        // Format Completion Date
-//	        LocalDate date = LocalDate.parse(completionDate);
-//	        String formattedDate = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-//
-//	        // Add Completion Date
-//	        contentStream.beginText();
-//	        contentStream.setFont(PDType1Font.HELVETICA_OBLIQUE, 14);
-//	        contentStream.newLineAtOffset(100, 140); // Bottom left area
-//	        contentStream.showText(formattedDate);
-//	        contentStream.endText();
-//
-//	        // Finalize
-//	        contentStream.close();
-//	        document.save(outputPdfPath);
-//	        document.close();
-//
-//	        System.out.println("✅ Certificate PDF saved successfully at: " + outputPdfPath);
-//	        return outputPdfPath;
-//
-//	    } catch (IOException e) {
-//	        e.printStackTrace();
-//	        return null;
-//	    }
-//	}
-
-//    private String generateCertificatePdf(String studentName, String studentId, String courseName, String completionDate) {
-//        String folderPath = "certificates";
-//        String outputPdfPath = folderPath + "/" + studentId + "_Certificate.pdf";
-//        String inputPdfPath = "src/main/resources/templates/HachionCertificate.pdf";
-//
-//        try {
-//            // Ensure folder exists
-//            File folder = new File(folderPath);
-//            if (!folder.exists()) {
-//                folder.mkdirs(); // create folders
-//                System.out.println("✅ 'certificates' folder created.");
-//            }
-//
-//            // Load and modify PDF
-//            PDDocument document = PDDocument.load(new File(inputPdfPath));
-//            PDPage page = document.getPage(0);
-//            PDPageContentStream contentStream = new PDPageContentStream(document, page,
-//                    PDPageContentStream.AppendMode.APPEND, true);
-//
-//            // Add dynamic data into the PDF text by replacing static text
-//            replaceTextInPDF(document, "Student Name", studentName);
-//            replaceTextInPDF(document, "STUDENTID : H000000000000000", "STUDENTID : " + studentId);
-//            replaceTextInPDF(document, "salesforce training", courseName);
-//            replaceTextInPDF(document, "11/07 2024", completionDate); // You can format completionDate as needed
-//
-//            // Save modified PDF
-//            document.save(outputPdfPath);
-//            document.close();
-//
-//            System.out.println("✅ Certificate PDF saved successfully at: " + outputPdfPath);
-//            return outputPdfPath;
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//            return null;
-//        }
-//    }
-
-	// Helper method to replace text in the PDF
-//    private void replaceTextInPDF(PDDocument document, String targetText, String replacementText) throws IOException {
-//        // Loop through all pages of the document
-//        for (PDPage page : document.getPages()) {
-//            PDPageContentStream contentStream = new PDPageContentStream(document, page,
-//                    PDPageContentStream.AppendMode.APPEND, true);
-//
-//            // Extract text from the page
-//            PDRectangle mediaBox = page.getMediaBox();
-//            PDFTextStripper textStripper = new PDFTextStripper();
-//            textStripper.setStartPage(0);
-//            textStripper.setEndPage(1);
-//            String pageText = textStripper.getText(document);
-//
-//            // Check if the targetText exists on the page and replace it
-//            if (pageText.contains(targetText)) {
-//                String newText = pageText.replace(targetText, replacementText);
-//                contentStream.beginText();
-//                contentStream.setFont(PDType1Font.HELVETICA_BOLD, 18);
-//                contentStream.newLineAtOffset(180, 550); // Position the text (adjust as necessary)
-//                contentStream.showText(newText); // Write the replaced text
-//                contentStream.endText();
-//            }
-//
-//            contentStream.close();
-//        }
-//    }
 
 }

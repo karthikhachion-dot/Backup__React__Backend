@@ -10,8 +10,8 @@ public class UserProfileResponse {
 	private String mobile;
 	private String studentId;
 	private String profileImage; // full URL if available
-	 @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
-	    private LocalDate dob;
+	@JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
+	private LocalDate dob;
 	private String gender;
 	private String address;
 	private String bio;
@@ -20,6 +20,12 @@ public class UserProfileResponse {
 	private String firstName;
 	private String lastName;
 	private String userName;
+
+	private String facebook;
+	private String twitter;
+	private String linkedin;
+	private String website;
+	private String github;
 
 	// getters/setters
 	public String getName() {
@@ -61,8 +67,6 @@ public class UserProfileResponse {
 	public void setProfileImage(String profileImage) {
 		this.profileImage = profileImage;
 	}
-
-
 
 	public LocalDate getDob() {
 		return dob;
@@ -138,6 +142,47 @@ public class UserProfileResponse {
 
 	public void setDob(Object dob2) {
 		// TODO Auto-generated method stub
-		
+
 	}
+
+	public String getFacebook() {
+		return facebook;
+	}
+
+	public void setFacebook(String facebook) {
+		this.facebook = facebook;
+	}
+
+	public String getTwitter() {
+		return twitter;
+	}
+
+	public void setTwitter(String twitter) {
+		this.twitter = twitter;
+	}
+
+	public String getLinkedin() {
+		return linkedin;
+	}
+
+	public void setLinkedin(String linkedin) {
+		this.linkedin = linkedin;
+	}
+
+	public String getWebsite() {
+		return website;
+	}
+
+	public void setWebsite(String website) {
+		this.website = website;
+	}
+
+	public String getGithub() {
+		return github;
+	}
+
+	public void setGithub(String github) {
+		this.github = github;
+	}
+
 }

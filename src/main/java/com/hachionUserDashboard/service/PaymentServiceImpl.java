@@ -71,9 +71,8 @@ public class PaymentServiceImpl implements PaymentService {
 	@Autowired
 	private WhatsAppService whatsAppService;
 
-	@Autowired
-	private WebhookSenderService webhookSenderService;
-
+//	@Autowired
+//	private WebhookSenderService webhookSenderService;
 
 	@Value("${payments.upload.path}")
 	private String paymentsUploadPath;
@@ -169,9 +168,22 @@ public class PaymentServiceImpl implements PaymentService {
 		courseAbbreviation = courseAbbreviation.length() > 5 ? courseAbbreviation.substring(0, 5) : courseAbbreviation;
 
 		String formattedDate = new SimpleDateFormat("MMddyyyy").format(new Date());
-		String invoiceNumber = "HACH" + courseAbbreviation + formattedDate + "-" + savedPayment.getPaymentId();
 
-		savedPayment.setInvoiceNumber(invoiceNumber);
+//		String invoiceNumber = "HACH" + courseAbbreviation + formattedDate + "-" + savedPayment.getPaymentId();
+//
+//		savedPayment.setInvoiceNumber(invoiceNumber);
+//		paymentRepository.save(savedPayment);
+
+		// ✅ FRONTEND PROVIDED INVOICE NUMBER
+		if (paymentRequest.getInvoiceNumber() != null && !paymentRequest.getInvoiceNumber().isBlank()) {
+			savedPayment.setInvoiceNumber(paymentRequest.getInvoiceNumber());
+		}
+		// 🔁 fallback (optional safety)
+		else {
+			String invoiceNumber = "HACH" + courseAbbreviation + formattedDate + "-" + savedPayment.getPaymentId();
+			savedPayment.setInvoiceNumber(invoiceNumber);
+		}
+
 		paymentRepository.save(savedPayment);
 
 		PaymentInstallment lastPaid = savedPayment.getInstallments().stream()
@@ -202,10 +214,10 @@ public class PaymentServiceImpl implements PaymentService {
 		String batchTiming = "N/A";
 		String trainingCoordinator = "N/A";
 
-		webhookSenderService.sendPaymentReceivedOffline(savedPayment.getStudentId(), savedPayment.getStudentName(),
-				savedPayment.getEmail(), savedPayment.getMobile(), savedPayment.getCourseName(),
-				savedPayment.getInvoiceNumber(), savedPayment.getTotalAmount(), receivedPayment, nextPayment,
-				nextPaymentDate, trainers, batchId, batchTiming, trainingCoordinator);
+//		webhookSenderService.sendPaymentReceivedOffline(savedPayment.getStudentId(), savedPayment.getStudentName(),
+//				savedPayment.getEmail(), savedPayment.getMobile(), savedPayment.getCourseName(),
+//				savedPayment.getInvoiceNumber(), savedPayment.getTotalAmount(), receivedPayment, nextPayment,
+//				nextPaymentDate, trainers, batchId, batchTiming, trainingCoordinator);
 
 		return createPaymentResponse(savedPayment);
 	}
@@ -451,8 +463,6 @@ public class PaymentServiceImpl implements PaymentService {
 		return response;
 	}
 
-
-
 	@Override
 	public String generateInvoice(PaymentRequest paymentRequest, Model model) {
 		Context context = new Context();
@@ -574,6 +584,194 @@ public class PaymentServiceImpl implements PaymentService {
 
 		model.addAttribute("studentName", paymentRequest.getStudentName());
 		return "invoice_template";
+	}
+	private double toDouble(Number value) {
+	    return value == null ? 0.0 : value.doubleValue();
+	}
+
+
+	@Override
+	public String generateInvoiceForOnline(PaymentRequest paymentRequest, Model model) {
+		Context context = new Context();
+		context.setVariable("studentName", paymentRequest.getStudentName());
+		context.setVariable("studentEmail", paymentRequest.getEmail());
+		context.setVariable("studentPhone", paymentRequest.getMobile());
+		context.setVariable("courseName", paymentRequest.getCourseName());
+//		context.setVariable("coursePrice", String.format("%.2f", paymentRequest.getCourseFee()));
+//		context.setVariable("discount", paymentRequest.getDiscount() + ".00");
+//		context.setVariable("tax", paymentRequest.getTax() + ".00");
+//		context.setVariable("totalAmount", String.format("%.2f", paymentRequest.getTotalAmount()));
+
+		SimpleDateFormat sdf = new SimpleDateFormat("MMddyyyy");
+		String formattedDate = sdf.format(new Date());
+		context.setVariable("invoiceNumber", paymentRequest.getInvoiceNumber());
+
+		List<PaymentInstallmentRequest> installments = paymentRequest.getInstallments();
+		PaymentInstallmentRequest selectedInstallment = null;
+		double receivedPayAmount = 0.0;
+
+		if (installments != null && !installments.isEmpty()) {
+			Long selectedId = paymentRequest.getSelectedInstallmentId();
+			if (selectedId != null) {
+				for (PaymentInstallmentRequest inst : installments) {
+					if (selectedId.equals(inst.getInstallmentId())) {
+						selectedInstallment = inst;
+						break;
+					}
+				}
+			}
+			if (selectedInstallment == null) {
+				selectedInstallment = installments.get(0);
+			}
+
+			LocalDate payDate = selectedInstallment.getPayDate();
+			LocalDate dueDate = selectedInstallment.getDueDate();
+
+			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM-dd-yyyy");
+			context.setVariable("invoiceDate", payDate.format(formatter));
+			context.setVariable("dueDate", dueDate.format(formatter));
+
+			receivedPayAmount = selectedInstallment.getReceivedPay();
+//			context.setVariable("receivedPay", String.format("%.2f", receivedPayAmount));
+			
+
+		}
+
+		String currencyCode = paymentRequest.getCurrencyCode(); // INR / USD / EUR
+
+		if (currencyCode == null || currencyCode.trim().isEmpty()) {
+			currencyCode = "USD";
+		}
+
+		context.setVariable("currency", currencyCode);
+
+		context.setVariable(
+		        "coursePrice",
+		        currencyCode + " " + String.format("%.2f", toDouble(paymentRequest.getCourseFee()))
+		);
+
+		context.setVariable(
+			    "discount",
+			    currencyCode + " " + String.format("%.2f", toDouble(paymentRequest.getDiscount()))
+			);
+
+
+		context.setVariable(
+		        "tax",
+		        currencyCode + " " + String.format("%.2f", toDouble(paymentRequest.getTax()))
+		);
+
+		context.setVariable(
+		        "totalAmount",
+		        currencyCode + " " + String.format("%.2f", toDouble(paymentRequest.getTotalAmount()))
+		);
+
+		context.setVariable(
+		        "receivedPay",
+		        currencyCode + " " + String.format("%.2f", toDouble(receivedPayAmount))
+		);
+
+		context.setVariable(
+		        "amountValue",
+		        currencyCode + " " + String.format("%.2f", toDouble(paymentRequest.getBalancePay()))
+		);
+
+		String status = paymentRequest.getStatus();
+		String emailStatus = status;
+
+		if (receivedPayAmount > 0.0) {
+			if (status == null || status.trim().isEmpty()) {
+				status = "PARTIALLY PAID";
+			}
+
+			context.setVariable("status", status.trim());
+
+			emailStatus = status.trim();
+		} else {
+
+			context.setVariable("status", null);
+
+			emailStatus = "NOT PAID";
+		}
+
+		String logoImagePath = "/home/ec2-user/uploads/images/HachionLogo.png";
+		context.setVariable("logoPath", "file:///" + logoImagePath.replace("\\", "/"));
+
+		String renderedHtml = templateEngine.process("invoice_template_for_online", context);
+
+		File directory = new File(invoiceDirectoryPath);
+		if (!directory.exists()) {
+			directory.mkdirs();
+		}
+
+		String safeFileName = paymentRequest.getStudentName().replaceAll("\\s+", "_") + "_"
+				+ paymentRequest.getCourseName().replaceAll("\\s+", "_");
+
+		String pdfFilePath = invoiceDirectoryPath + File.separator + safeFileName + ".pdf";
+
+//		try (OutputStream os = new FileOutputStream(pdfFilePath)) {
+//			PdfRendererBuilder builder = new PdfRendererBuilder();
+//			builder.useFastMode();
+//
+//			builder.useFont(new File("/home/ec2-user/fonts/DejaVuSans.ttf"), "DejaVu Sans");
+//
+//			String baseUri = new File("/home/ec2-user/uploads").toURI().toString();
+//			builder.withHtmlContent(renderedHtml, baseUri);
+//			builder.toStream(os);
+//			builder.run();
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+		try (OutputStream os = new FileOutputStream(pdfFilePath)) {
+
+		    PdfRendererBuilder builder = new PdfRendererBuilder();
+		    builder.useFastMode();
+		    
+		    String baseUri = new File("/home/ec2-user/uploads").toURI().toString();
+			builder.withHtmlContent(renderedHtml, baseUri);
+		    builder.toStream(os);
+		    builder.run();
+
+		    File pdfFile = new File(pdfFilePath);
+		    if (!pdfFile.exists() || pdfFile.length() < 1024) {
+		        throw new RuntimeException("Generated PDF is empty or corrupted");
+		    }
+
+		} catch (Exception e) {
+		    throw new RuntimeException("Invoice PDF generation failed", e);
+		}
+
+
+		File pdfFile = new File(pdfFilePath);
+
+		if (pdfFile.exists()) {
+			try {
+				if ("PARTIALLY PAID".equalsIgnoreCase(emailStatus)) {
+					double amountPaid = paymentRequest.getTotalAmount() - paymentRequest.getBalancePay();
+
+					emailService.sendInvoiceEmailForParitialPaid(paymentRequest.getEmail(),
+							paymentRequest.getStudentName(), paymentRequest.getCourseName(), amountPaid, pdfFilePath);
+
+				} else if ("PAID".equalsIgnoreCase(emailStatus)) {
+					emailService.sendInvoiceEmailForPaid(paymentRequest.getEmail(), paymentRequest.getStudentName(),
+							paymentRequest.getCourseName(), paymentRequest.getTotalAmount(), pdfFilePath);
+
+				} else if ("NOT PAID".equalsIgnoreCase(emailStatus)) {
+					emailService.sendInvoiceEmail(paymentRequest.getEmail(), paymentRequest.getStudentName(),
+							paymentRequest.getCourseName(), paymentRequest.getBalancePay(), pdfFilePath);
+
+				} else {
+
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} else {
+
+		}
+
+		model.addAttribute("studentName", paymentRequest.getStudentName());
+		return "invoice_template_for_online";
 	}
 
 	@Override
@@ -759,7 +957,6 @@ public class PaymentServiceImpl implements PaymentService {
 		return "invoice_template";
 	}
 
-
 	@Override
 	@Transactional
 	public void sendAutoRemindersForTomorrowDue() {
@@ -857,7 +1054,6 @@ public class PaymentServiceImpl implements PaymentService {
 
 		}
 
-
 		for (PaymentInstallment duePi : sendToday) {
 			Payment p = duePi.getPayment();
 
@@ -866,28 +1062,24 @@ public class PaymentServiceImpl implements PaymentService {
 			Double lastReceived = prevPaidOpt.map(PaymentInstallment::getReceivedPay).orElse(null);
 
 			try {
-				
-				webhookSenderService.sendPaymentReminder(p.getStudentId(), p.getStudentName(), p.getEmail(),
-						p.getMobile(), p.getCourseName(), p.getInvoiceNumber(),
-						(p.getBalancePay() == null ? 0.0 : p.getBalancePay()),
-						(p.getTotalAmount() == null ? 0.0 : p.getTotalAmount()), duePi.getDueDate(), lastReceived,
-						lastPayDate);
 
-			
+//				webhookSenderService.sendPaymentReminder(p.getStudentId(), p.getStudentName(), p.getEmail(),
+//						p.getMobile(), p.getCourseName(), p.getInvoiceNumber(),
+//						(p.getBalancePay() == null ? 0.0 : p.getBalancePay()),
+//						(p.getTotalAmount() == null ? 0.0 : p.getTotalAmount()), duePi.getDueDate(), lastReceived,
+//						lastPayDate);
 
 				LocalDate dueDate = duePi.getDueDate();
 				if (dueDate != null && dueDate.isEqual(headsUpDate)) {
 
-					
 					double amountDue = (p.getBalancePay() == null ? 0.0 : p.getBalancePay());
 
-					whatsAppService.sendTwoDayHeadsUpReminder(p.getMobile(), p.getStudentName(), amountDue, 
+					whatsAppService.sendTwoDayHeadsUpReminder(p.getMobile(), p.getStudentName(), amountDue,
 							p.getCourseName(), dueDate);
 				}
 
-
 				if (dueDate != null && dueDate.isEqual(today)) {
-					
+
 					double amountDue = (p.getBalancePay() == null ? 0.0 : p.getBalancePay());
 
 					whatsAppService.sendPaymentDueTodayReminder(p.getMobile(), p.getStudentName(), amountDue,
@@ -896,10 +1088,9 @@ public class PaymentServiceImpl implements PaymentService {
 
 				if (dueDate != null && dueDate.isBefore(today)) {
 					long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(dueDate, today);
-					if (daysOverdue == 2) { 
+					if (daysOverdue == 2) {
 						double amountDue = (p.getBalancePay() == null ? 0.0 : p.getBalancePay());
 
-						
 						whatsAppService.sendPaymentOverdue2DaysReminder(p.getMobile(), p.getStudentName(), amountDue,
 								p.getCourseName(), dueDate);
 					}
@@ -908,7 +1099,6 @@ public class PaymentServiceImpl implements PaymentService {
 				if (dueDate != null && dueDate.isBefore(today)) {
 					long daysOverdue = java.time.temporal.ChronoUnit.DAYS.between(dueDate, today);
 
-					
 					if (daysOverdue == 7) {
 						double amountDue = (p.getBalancePay() == null ? 0.0 : p.getBalancePay());
 						whatsAppService.sendPaymentOverdue7DaysReminder(p.getMobile(), p.getStudentName(), amountDue,
@@ -916,7 +1106,6 @@ public class PaymentServiceImpl implements PaymentService {
 					}
 				}
 
-				
 				duePi.setLastReminderOn(today);
 				Integer c = (duePi.getReminderCount() == null ? 0 : duePi.getReminderCount());
 				duePi.setReminderCount(c + 1);

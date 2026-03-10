@@ -3,7 +3,7 @@ package com.hachionUserDashboard.dto;
 import java.time.LocalDate;
 
 public class PaymentTransactionSummaryResponse {
-	private int serialNo;
+	private Long id;
 	private String studentId;
 	private String studentName;
 	private String email;
@@ -18,12 +18,14 @@ public class PaymentTransactionSummaryResponse {
 	private String paymentMethod;
 	private LocalDate createdDate;
 
-	public int getSerialNo() {
-		return serialNo;
+	
+
+	public Long getId() {
+		return id;
 	}
 
-	public void setSerialNo(int serialNo) {
-		this.serialNo = serialNo;
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	public String getStudentId() {

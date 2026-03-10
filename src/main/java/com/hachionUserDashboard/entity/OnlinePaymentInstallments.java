@@ -2,6 +2,7 @@ package com.hachionUserDashboard.entity;
 
 import java.time.LocalDate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
@@ -13,7 +14,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
@@ -27,6 +27,7 @@ public class OnlinePaymentInstallments {
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "payment_transaction_id", nullable = false)
+	@JsonIgnore
 	private PaymentTransaction paymentTransaction;
 
 	@Column(name = "installment_number")

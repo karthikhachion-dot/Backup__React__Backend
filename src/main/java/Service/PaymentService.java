@@ -41,6 +41,8 @@ public interface PaymentService {
 
 	public void sendAutoRemindersForTomorrowDue();
 
+	String generateInvoiceForOnline(PaymentRequest paymentRequest, Model model);
+
 //	public String generateInvoiceBeforePayment(PaymentRequest paymentRequest, Model model)
 	
 	

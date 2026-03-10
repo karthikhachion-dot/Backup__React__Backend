@@ -31,39 +31,65 @@ public class ToolsServiceImpl {
 		this.toolsItemRepository = toolsItemRepository;
 	}
 
-	// ================= ADD =================
 	public ToolsResponse addTools(String category, String course, List<String> names, List<String> links,
-			List<MultipartFile> images) {
+			List<MultipartFile> images, List<String> imageUrls) {
 
-		validateSizes(names, links, images);
+		validateSizes(names, links, images, imageUrls);
 
-		ToolsEntity tools = new ToolsEntity();
-		tools.setCategoryName(category);
-		tools.setCourseName(course);
-		tools.setCreatedDate(LocalDate.now());
+		// ✅ STEP 1: FIND EXISTING PARENT (VERY IMPORTANT)
+		ToolsEntity tools = toolsRepository.findByCategoryNameAndCourseName(category, course).orElseGet(() -> {
+			ToolsEntity t = new ToolsEntity();
+			t.setCategoryName(category);
+			t.setCourseName(course);
+			t.setCreatedDate(LocalDate.now());
+			t.setItems(new ArrayList<>());
+			return t;
+		});
 
-		List<ToolsItemEntity> items = new ArrayList<>();
+		// Existing children (if parent already exists)
+		List<ToolsItemEntity> items = tools.getItems();
 
 		for (int i = 0; i < names.size(); i++) {
-			Long count = toolsItemRepository.countDuplicate(category, course, names.get(i));
 
+			// ✅ Duplicate tool check (same as before)
+			Long count = toolsItemRepository.countDuplicate(category, course, names.get(i));
 			if (count != null && count > 0) {
 				throw new RuntimeException("Duplicate tool not allowed for same category and course: " + names.get(i));
 			}
+
 			ToolsItemEntity item = new ToolsItemEntity();
 			item.setToolsName(names.get(i));
 			item.setToolsLink(links.get(i));
 
-			String imageFileName = saveImage(images.get(i), category, course, names.get(i));
+//			String imageFileName = saveImage(images.get(i), category, course, names.get(i));
+//
+//			item.setImageName(images.get(i).getOriginalFilename());
+//			item.setImageUrl(imageFileName);
+			if (images != null && images.size() > i && images.get(i) != null && !images.get(i).isEmpty()) {
 
-			item.setImageName(images.get(i).getOriginalFilename());
-			item.setImageUrl(imageFileName);
+				String imageFileName = saveImage(images.get(i), category, course, names.get(i));
+				item.setImageName(images.get(i).getOriginalFilename());
+				item.setImageUrl(imageFileName);
+
+			} else if (imageUrls != null && imageUrls.size() > i && imageUrls.get(i) != null
+			        && !imageUrls.get(i).isBlank()) {
+
+			    // Reuse existing image
+			    item.setImageUrl(imageUrls.get(i));
+
+			    // ALSO set imageName (important)
+			    item.setImageName(imageUrls.get(i));
+			}
+
+
 			item.setTools(tools);
 
 			items.add(item);
 		}
 
 		tools.setItems(items);
+
+		// ✅ STEP 2: SAVE (INSERT if new, UPDATE if exists)
 		return map(toolsRepository.save(tools));
 	}
 
@@ -79,7 +105,7 @@ public class ToolsServiceImpl {
 	public ToolsResponse updateTools(String category, String course, List<Long> itemIds, List<String> names,
 			List<String> links, List<MultipartFile> images) {
 
-		validateSizes(names, links, images);
+		validateSizesForUpdate(names, links, images);
 
 		ToolsEntity entity = toolsRepository.findByCategoryNameAndCourseName(category, course)
 				.orElseThrow(() -> new RuntimeException("Tools not found"));
@@ -153,45 +179,30 @@ public class ToolsServiceImpl {
 		return map(toolsRepository.save(entity));
 	}
 
-//	private void deleteImageFile(String fileName) {
-//		if (fileName == null || fileName.isBlank())
-//			return;
-//
-//		try {
-//			Path path = Paths.get(uploadPath, fileName);
-//			Files.deleteIfExists(path);
-//		} catch (Exception e) {
-//			// Do NOT throw – DB update must not fail
-//			System.err.println("Failed to delete image file: " + fileName);
-//		}
-//	}
-
 	private void deleteImageFile(String fileName) {
 
-	    if (fileName == null || fileName.isBlank()) {
-	        return;
-	    }
+		if (fileName == null || fileName.isBlank()) {
+			return;
+		}
 
-	    try {
-	        Path imagePath = Paths.get(uploadPath)
-	                .resolve(fileName)     // safe join
-	                .normalize()
-	                .toAbsolutePath();
+		try {
+			Path imagePath = Paths.get(uploadPath).resolve(fileName) // safe join
+					.normalize().toAbsolutePath();
 
-	        System.out.println("Deleting image: " + imagePath);
+			System.out.println("Deleting image: " + imagePath);
 
-	        boolean deleted = Files.deleteIfExists(imagePath);
+			boolean deleted = Files.deleteIfExists(imagePath);
 
-	        if (deleted) {
-	            System.out.println("Image deleted successfully: " + fileName);
-	        } else {
-	            System.out.println("Image not found on disk: " + fileName);
-	        }
+			if (deleted) {
+				System.out.println("Image deleted successfully: " + fileName);
+			} else {
+				System.out.println("Image not found on disk: " + fileName);
+			}
 
-	    } catch (Exception e) {
-	        System.err.println("Failed to delete image file: " + fileName);
-	        e.printStackTrace();
-	    }
+		} catch (Exception e) {
+			System.err.println("Failed to delete image file: " + fileName);
+			e.printStackTrace();
+		}
 	}
 
 	// ================= DELETE =================
@@ -234,7 +245,24 @@ public class ToolsServiceImpl {
 	}
 
 	// ================= VALIDATION =================
-	private void validateSizes(List<String> names, List<String> links, List<MultipartFile> images) {
+	private void validateSizes(List<String> names, List<String> links, List<MultipartFile> images,
+			List<String> imageUrls) {
+		if (names == null || links == null) {
+			throw new RuntimeException("Tools data missing");
+		}
+
+		if (names.size() != links.size()) {
+			throw new RuntimeException("Tools names and links count mismatch");
+		}
+
+		if ((images != null && images.size() != names.size())
+				&& (imageUrls != null && imageUrls.size() != names.size())) {
+			throw new RuntimeException("Tools images count mismatch");
+		}
+
+	}
+
+	private void validateSizesForUpdate(List<String> names, List<String> links, List<MultipartFile> images) {
 		if (names == null || links == null) {
 			throw new RuntimeException("Tools data missing");
 		}
@@ -280,39 +308,33 @@ public class ToolsServiceImpl {
 
 	public List<ToolsFlatResponse> getAllToolsFlat() {
 
-	    List<ToolsEntity> entities = toolsRepository.findAll();
-	    List<ToolsFlatResponse> response = new ArrayList<>();
+		List<ToolsEntity> entities = toolsRepository.findAll();
+		List<ToolsFlatResponse> response = new ArrayList<>();
 
-	    for (ToolsEntity entity : entities) {
-	        for (ToolsItemEntity item : entity.getItems()) {
+		for (ToolsEntity entity : entities) {
+			for (ToolsItemEntity item : entity.getItems()) {
 
-	            ToolsFlatResponse r = new ToolsFlatResponse();
+				ToolsFlatResponse r = new ToolsFlatResponse();
 
-	            r.setCurrId(entity.getCurrId());
-	            r.setCategory_name(entity.getCategoryName());
-	            r.setCourseName(entity.getCourseName());
-	            r.setCreatedDate(entity.getCreatedDate());
+				r.setCurrId(entity.getCurrId());
+				r.setCategory_name(entity.getCategoryName());
+				r.setCourseName(entity.getCourseName());
+				r.setCreatedDate(entity.getCreatedDate());
 
-	            r.setId(item.getId());
-	            r.setToolsName(item.getToolsName());
-	            r.setToolsLink(item.getToolsLink());
-	            r.setImageName(item.getImageName());
-	            r.setImageUrl(item.getImageUrl());
+				r.setId(item.getId());
+				r.setToolsName(item.getToolsName());
+				r.setToolsLink(item.getToolsLink());
+				r.setImageName(item.getImageName());
+				r.setImageUrl(item.getImageUrl());
 
-	            response.add(r);
-	        }
-	    }
+				response.add(r);
+			}
+		}
 
-	    response.sort(
-	        Comparator.comparing(
-	            ToolsFlatResponse::getCategory_name,
-	            String.CASE_INSENSITIVE_ORDER
-	        )
-	    );
+		response.sort(Comparator.comparing(ToolsFlatResponse::getCategory_name, String.CASE_INSENSITIVE_ORDER));
 
-	    return response;
+		return response;
 	}
-
 
 	public ToolsFlatResponse updateSingleToolItem(Long itemId, String category, String course, String toolsName,
 			String toolsLink, MultipartFile image) {
@@ -371,46 +393,74 @@ public class ToolsServiceImpl {
 
 		return r;
 	}
+
 	public void deleteSingleToolItem(Long itemId, String category, String course) {
 
-	    ToolsItemEntity item = toolsItemRepository.findById(itemId)
-	            .orElseThrow(() -> new RuntimeException("Tool item not found"));
+		ToolsItemEntity item = toolsItemRepository.findById(itemId)
+				.orElseThrow(() -> new RuntimeException("Tool item not found"));
 
-	    ToolsEntity parent = item.getTools();
+		ToolsEntity parent = item.getTools();
 
-	    // ✅ SAFETY CHECK
-	    if (!parent.getCategoryName().equals(category)
-	            || !parent.getCourseName().equals(course)) {
-	        throw new RuntimeException("Category or Course mismatch");
-	    }
+		// ✅ SAFETY CHECK
+		if (!parent.getCategoryName().equals(category) || !parent.getCourseName().equals(course)) {
+			throw new RuntimeException("Category or Course mismatch");
+		}
 
-	    // ✅ DELETE IMAGE FIRST
-	    if (item.getImageUrl() != null && !item.getImageUrl().isBlank()) {
-	        deleteImageFile(item.getImageUrl());
-	    }
+		// ✅ DELETE IMAGE FIRST
+		if (item.getImageUrl() != null && !item.getImageUrl().isBlank()) {
+			deleteImageFile(item.getImageUrl());
+		}
 
-	    // ✅ DELETE DB RECORD
-	    toolsItemRepository.delete(item);
+		// ✅ DELETE DB RECORD
+		toolsItemRepository.delete(item);
 	}
+
 	public List<ToolsCoverResponse> getToolsByCourse(String courseName) {
 
-	    List<ToolsEntity> entities =
-	            toolsRepository.findByCourseName(courseName);
+		List<ToolsEntity> entities = toolsRepository.findByCourseName(courseName);
 
-	    List<ToolsCoverResponse> response = new ArrayList<>();
+		List<ToolsCoverResponse> response = new ArrayList<>();
 
-	    for (ToolsEntity entity : entities) {
-	        for (ToolsItemEntity item : entity.getItems()) {
+		for (ToolsEntity entity : entities) {
+			for (ToolsItemEntity item : entity.getItems()) {
 
-	            ToolsCoverResponse r = new ToolsCoverResponse();
-	            r.setToolsName(item.getToolsName());
-	            r.setToolsLink(item.getToolsLink());
-	            r.setImageUrl(item.getImageUrl());
+				ToolsCoverResponse r = new ToolsCoverResponse();
+				r.setToolsName(item.getToolsName());
+				r.setToolsLink(item.getToolsLink());
+				r.setImageUrl(item.getImageUrl());
 
-	            response.add(r);
-	        }
-	    }
+				response.add(r);
+			}
+		}
 
-	    return response;
+		return response;
+	}
+
+	public List<String> getAllToolNames() {
+		return toolsRepository.findDistinctToolNamesOrderByAsc();
+	}
+
+	public ToolDetailsResponse getToolDetailsByName(String toolName) {
+
+		List<ToolsItemEntity> items = toolsItemRepository.findByToolsNameIgnoreCaseOrderByIdAsc(toolName);
+
+		if (items.isEmpty()) {
+			throw new RuntimeException("Tool not found: " + toolName);
+		}
+
+		// ✅ FIRST TOOL (earliest inserted)
+		ToolsItemEntity item = items.get(0);
+
+		ToolDetailsResponse response = new ToolDetailsResponse();
+		response.setToolsName(item.getToolsName());
+		response.setToolsLink(item.getToolsLink());
+		response.setImageName(item.getImageName());
+		response.setImageUrl(item.getImageUrl());
+
+		// Parent entity values
+		response.setCategoryName(item.getTools().getCategoryName());
+		response.setCourseName(item.getTools().getCourseName());
+
+		return response;
 	}
 }

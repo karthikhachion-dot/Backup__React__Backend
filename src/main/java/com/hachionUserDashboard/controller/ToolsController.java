@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hachionUserDashboard.dto.ToolDetailsResponse;
 import com.hachionUserDashboard.dto.ToolsCoverResponse;
 import com.hachionUserDashboard.dto.ToolsFlatResponse;
 import com.hachionUserDashboard.dto.ToolsResponse;
@@ -32,12 +33,24 @@ public class ToolsController {
 	}
 
 	// ADD
+//	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//	public ToolsResponse addTools(@RequestParam String category_name, @RequestParam String courseName,
+//			@RequestParam List<String> toolsName, @RequestParam List<String> toolsLink,
+//			@RequestParam List<MultipartFile> toolImages) {
+//		return toolsService.addTools(category_name, courseName, toolsName, toolsLink, toolImages);
+//	}
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ToolsResponse addTools(@RequestParam String category_name, @RequestParam String courseName,
-			@RequestParam List<String> toolsName, @RequestParam List<String> toolsLink,
-			@RequestParam List<MultipartFile> toolImages) {
-		return toolsService.addTools(category_name, courseName, toolsName, toolsLink, toolImages);
+	public ToolsResponse addTools(
+	        @RequestParam String category_name,
+	        @RequestParam String courseName,
+	        @RequestParam List<String> toolsName,
+	        @RequestParam List<String> toolsLink,
+	        @RequestParam(required = false) List<MultipartFile> toolImages,
+	        @RequestParam(required = false) List<String> imageUrls) {
+
+	    return toolsService.addTools(category_name, courseName, toolsName, toolsLink, toolImages, imageUrls);
 	}
+
 
 	// GET by category + course
 	@GetMapping
@@ -92,5 +105,16 @@ public class ToolsController {
 		List<ToolsCoverResponse> tools = toolsService.getToolsByCourse(courseName);
 
 		return ResponseEntity.ok(tools);
+	}
+
+	@GetMapping("/names")
+	public ResponseEntity<List<String>> getAllToolNames() {
+		return ResponseEntity.ok(toolsService.getAllToolNames());
+	}
+
+	@GetMapping("/details")
+	public ResponseEntity<ToolDetailsResponse> getToolDetails(@RequestParam String toolName) {
+
+		return ResponseEntity.ok(toolsService.getToolDetailsByName(toolName));
 	}
 }

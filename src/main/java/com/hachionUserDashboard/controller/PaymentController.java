@@ -3,6 +3,9 @@ package com.hachionUserDashboard.controller;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,8 @@ import org.springframework.web.multipart.MultipartFile;
 import com.hachionUserDashboard.dto.PaymentRequest;
 import com.hachionUserDashboard.dto.PaymentResponse;
 import com.hachionUserDashboard.dto.StudentCourseInfo;
+import com.hachionUserDashboard.entity.Payment;
+import com.hachionUserDashboard.repository.PaymentRepository;
 
 import Service.PaymentService;
 
@@ -41,6 +46,9 @@ public class PaymentController {
 
 	@Autowired
 	private PaymentService paymentService;
+
+	@Autowired
+	private PaymentRepository paymentRepository;
 
 	@Value("${invoice.path}")
 	private String invoiceDirectoryPath;
@@ -128,6 +136,11 @@ public class PaymentController {
 	@PostMapping("/generateInvoice")
 	public String generateInvoice(@RequestBody PaymentRequest paymentRequest, Model model) {
 		return paymentService.generateInvoice(paymentRequest, model);
+	}
+
+	@PostMapping("/generateInvoiceForOnline")
+	public String generateInvoiceForOnline(@RequestBody PaymentRequest paymentRequest, Model model) {
+		return paymentService.generateInvoiceForOnline(paymentRequest, model);
 	}
 
 	@PostMapping("/reminder")

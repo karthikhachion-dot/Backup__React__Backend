@@ -28,4 +28,15 @@ public interface BlogRepository extends JpaRepository<Blogs, Integer> {
 			+ "WHERE category_name IN (:categories) " + "ORDER BY category_name DESC, id DESC", nativeQuery = true)
 	List<Object[]> findByCategoriesForList(@Param("categories") List<String> categories);
 
+	@Query(value = """
+			    SELECT
+			        id,
+			        category_name,
+			        title,
+			        author,
+			        date
+			    FROM blogs
+			""", nativeQuery = true)
+	List<Object[]> findAllBlogColumns();
+
 }

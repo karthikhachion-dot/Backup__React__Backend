@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,8 +20,10 @@ import com.hachionUserDashboard.dto.PaymentTransactionRequest;
 import com.hachionUserDashboard.dto.PaymentTransactionResponse;
 import com.hachionUserDashboard.dto.PaymentTransactionSummaryResponse;
 import com.hachionUserDashboard.entity.PaymentTransaction;
+import com.hachionUserDashboard.service.EmailService;
 
 import Service.RazorpayServiceInterface;
+import jakarta.mail.MessagingException;
 
 @RestController
 @RequestMapping("/razorpay")
@@ -28,6 +31,9 @@ public class RazorpayController {
 
 	@Autowired
 	private RazorpayServiceInterface razorpayService;
+
+	@Autowired
+	private EmailService emailService;
 
 //	@PostMapping("/create-razorpay-order")
 //	public String createOrder(@RequestParam Double amount) {
@@ -66,15 +72,24 @@ public class RazorpayController {
 	}
 
 	@GetMapping("/getByEmailAndCourse")
-	public List<PaymentTransaction> getByEmailAndCourse(@RequestParam String email, @RequestParam String courseName) {
-		return razorpayService.getTransactionsByEmailAndCourse(email, courseName);
+	public List<PaymentTransaction> getByEmailAndCourse(@RequestParam String email, @RequestParam String courseName,
+			@RequestParam String batchId) {
+		return razorpayService.getTransactionsByEmailAndCourse(email, courseName, batchId);
 	}
 
 	@PostMapping("/installment-request")
 	public ResponseEntity<PaymentTransactionResponse> createInstallmentRequest(
-			@RequestBody PaymentTransactionRequest paymentTransactionRequest) {
+			@RequestBody PaymentTransactionRequest paymentTransactionRequest) throws MessagingException {
 
 		PaymentTransactionResponse response = razorpayService.createRequestInstallment(paymentTransactionRequest);
+
+		// Email to USER
+		emailService.sendInstallmentRequestSubmittedEmail(paymentTransactionRequest.getPayerEmail(),
+				paymentTransactionRequest.getStudentName(), paymentTransactionRequest.getCourseName());
+
+		// Email to ADMIN
+		emailService.sendInstallmentRequestAdminEmail(paymentTransactionRequest.getStudentName(),
+				paymentTransactionRequest.getPayerEmail(), paymentTransactionRequest.getCourseName());
 		return ResponseEntity.ok(response);
 	}
 
@@ -87,18 +102,35 @@ public class RazorpayController {
 
 	@PutMapping("/update-status/{transactionId}")
 	public ResponseEntity<String> updateRequestStatus(@PathVariable Long transactionId,
-			@RequestParam String requestStatus) {
+			@RequestParam String requestStatus) throws MessagingException {
 
 		razorpayService.updateInstallmentRequestStatus(transactionId, requestStatus);
+
+		PaymentTransaction txn = razorpayService.getTransactionById(transactionId);
+
+		if ("APPROVED".equalsIgnoreCase(txn.getRequestStatus())) {
+			emailService.sendInstallmentApprovedEmail(txn.getPayerEmail(), txn.getStudentName(), txn.getCourseName());
+		} else if ("REJECTED".equalsIgnoreCase(txn.getRequestStatus())) {
+			emailService.sendInstallmentRejectedEmail(txn.getPayerEmail(), txn.getStudentName(), txn.getCourseName());
+		}
+
 		return ResponseEntity.ok("Request status updated successfully.");
 	}
 
+//	@GetMapping("/checkInstallment")
+//	public ResponseEntity<InstallmentStatusResponse> checkInstallment(@RequestParam String studentId,
+//			@RequestParam String courseName) {
+//
+//		InstallmentStatusResponse response = razorpayService.getLatestStatus(studentId, courseName);
+//
+//		return ResponseEntity.ok(response);
+//	}
+
 	@GetMapping("/checkInstallment")
 	public ResponseEntity<InstallmentStatusResponse> checkInstallment(@RequestParam String studentId,
-			@RequestParam String courseName) {
+			@RequestParam String courseName, @RequestParam String batchId) {
 
-		InstallmentStatusResponse response = razorpayService.getLatestStatus(studentId, courseName);
-
+		InstallmentStatusResponse response = razorpayService.getLatestStatus(studentId, courseName, batchId);
 		return ResponseEntity.ok(response);
 	}
 
@@ -112,4 +144,11 @@ public class RazorpayController {
 	public ResponseEntity<List<PaymentRequest>> getOrders(@RequestParam String email) {
 		return ResponseEntity.ok(razorpayService.getDashboardOrders(email));
 	}
+
+	@DeleteMapping("/payments/{id}")
+	public ResponseEntity<String> deletePayment(@PathVariable Long id) {
+		razorpayService.deletePaymentById(id);
+		return ResponseEntity.ok("Payment deleted successfully");
+	}
+	
 }

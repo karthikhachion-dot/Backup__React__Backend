@@ -4,11 +4,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hachionUserDashboard.entity.Enroll;
+import com.hachionUserDashboard.entity.RequestBatch;
+import com.hachionUserDashboard.repository.CourseRepository;
 import com.twilio.Twilio;
 import com.twilio.rest.api.v2010.account.Message;
 import com.twilio.type.PhoneNumber;
@@ -45,6 +48,15 @@ public class WhatsAppService {
 
 	@Value("${twilio.paymentOverdue7Days:}")
 	private String paymentOverdue7Days;
+
+	@Value("${twilio.selfPacedContentSid}")
+	private String selfPacedContentSid;
+
+	@Value("${twilio.mentoringModeContentSid}")
+	private String mentoringModeContentSid;
+
+	@Autowired
+	private CourseRepository courseRepository;
 
 	public void sendLiveClassDemoEnrollmentDetails(Enroll enroll) {
 		try {
@@ -320,46 +332,98 @@ public class WhatsAppService {
 			e.printStackTrace();
 		}
 	}
-	public void sendPaymentOverdue7DaysReminder(
-	        String mobile,
-	        String studentName,
-	        Double amountDue,    // Balance Amount
-	        String courseName,
-	        LocalDate dueDate
-	) {
-	    try {
-	        Twilio.init(accountSid, authToken);
 
-	        String toWhatsApp = "whatsapp:" + (mobile == null ? "" : mobile.trim().replaceAll("\\s+", ""));
-	        if (toWhatsApp.length() <= "whatsapp:".length()) return; // no number
+	public void sendPaymentOverdue7DaysReminder(String mobile, String studentName, Double amountDue, // Balance Amount
+			String courseName, LocalDate dueDate) {
+		try {
+			Twilio.init(accountSid, authToken);
 
-	        if (paymentOverdue7Days == null || paymentOverdue7Days.isBlank()) {
-	            System.err.println("❌ Missing SID: set twilio.paymentOverdue7Days in application.properties");
-	            return;
-	        }
+			String toWhatsApp = "whatsapp:" + (mobile == null ? "" : mobile.trim().replaceAll("\\s+", ""));
+			if (toWhatsApp.length() <= "whatsapp:".length())
+				return; // no number
 
-	        // Template vars: {{1}} name, {{2}} amount, {{3}} course, {{4}} due date
-	        String variablesJson = new com.fasterxml.jackson.databind.ObjectMapper()
-	            .writeValueAsString(java.util.Map.of(
-	                "1", safe(studentName, "Student"),
-	                "2", fmtAmount(amountDue),
-	                "3", safe(courseName, "Course"),
-	                "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD")
-	            ));
+			if (paymentOverdue7Days == null || paymentOverdue7Days.isBlank()) {
+				System.err.println("❌ Missing SID: set twilio.paymentOverdue7Days in application.properties");
+				return;
+			}
 
-	        com.twilio.rest.api.v2010.account.Message.creator(
-	            new com.twilio.type.PhoneNumber(toWhatsApp),
-	            new com.twilio.type.PhoneNumber(fromWhatsApp),
-	            "" // body empty when using Content SID
-	        )
-	        .setContentSid(paymentOverdue7Days)
-	        .setContentVariables(variablesJson)
-	        .create();
+			// Template vars: {{1}} name, {{2}} amount, {{3}} course, {{4}} due date
+			String variablesJson = new com.fasterxml.jackson.databind.ObjectMapper()
+					.writeValueAsString(java.util.Map.of("1", safe(studentName, "Student"), "2", fmtAmount(amountDue),
+							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD")));
 
-	    } catch (Exception e) {
-	        System.err.println("❌ WhatsApp Overdue(7d) send failed: " + e.getMessage());
-	        e.printStackTrace();
-	    }
+			com.twilio.rest.api.v2010.account.Message.creator(new com.twilio.type.PhoneNumber(toWhatsApp),
+					new com.twilio.type.PhoneNumber(fromWhatsApp), "" // body empty when using Content SID
+			).setContentSid(paymentOverdue7Days).setContentVariables(variablesJson).create();
+
+		} catch (Exception e) {
+			System.err.println("❌ WhatsApp Overdue(7d) send failed: " + e.getMessage());
+			e.printStackTrace();
+		}
 	}
 
+	public void sendSelfPacedEnrollmentConfirmed(Enroll enroll) {
+		try {
+			Twilio.init(accountSid, authToken);
+
+			String toWhatsApp = "whatsapp:" + enroll.getMobile().trim().replaceAll("\\s+", "");
+			if (toWhatsApp.length() <= "whatsapp:".length())
+				return;
+
+			String studentName = safe(enroll.getName(), "Student");
+			String courseName = safe(enroll.getCourse_name(), "Course");
+
+			String accessDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy"));
+
+			String loginLink = "https://hachion.co";
+
+			String variablesJson = new ObjectMapper().writeValueAsString(Map.of("1", studentName, // {{1}}
+					"2", courseName, // {{2}}
+					"3", accessDate, // {{3}}
+					"4", loginLink // {{4}}
+			));
+
+			Message.creator(new PhoneNumber(toWhatsApp), new PhoneNumber(fromWhatsApp), "" // body must be empty when
+																							// using Content SID
+			).setContentSid(selfPacedContentSid).setContentVariables(variablesJson).create();
+
+			System.out.println("✅ Self-paced WhatsApp sent to " + toWhatsApp);
+
+		} catch (Exception e) {
+			System.err.println("❌ Error sending self-paced WhatsApp message:");
+			e.printStackTrace();
+		}
+	}
+
+	public void sendEnrollmentConfirmedUtility(RequestBatch requestBatch) {
+		try {
+			Twilio.init(accountSid, authToken);
+
+			String toWhatsApp = "whatsapp:" + requestBatch.getMobile().trim().replaceAll("\\s+", "");
+			if (toWhatsApp.length() <= "whatsapp:".length())
+				return;
+
+			// ✅ Fetch ONLY duration from Course table using courseName
+			String duration = "TBD";
+			if (requestBatch.getCourseName() != null && !requestBatch.getCourseName().isBlank()) {
+				duration = courseRepository.findNumberOfClassesByCourseName(requestBatch.getCourseName()).orElse("TBD");
+			}
+
+			String variablesJson = new ObjectMapper()
+					.writeValueAsString(Map.of("1", "🎓 " + safe(requestBatch.getUserName(), "Student"), "2",
+							"🧑‍🏫 " + safe(requestBatch.getMode(), "Mentoring Mode"), "3",
+							"📘 " + safe(requestBatch.getCourseName(), "Course"), "4",
+							"📅 " + LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMMM yyyy")), "5",
+							"⏱️ " + safe(duration, "TBD"), "6",
+							"🚀 " + safe(requestBatch.getMode(), "Instructor-Guided"), "7", "🌐 https://hachion.co"));
+
+			Message.creator(new PhoneNumber(toWhatsApp), new PhoneNumber(fromWhatsApp), "")
+					.setContentSid(mentoringModeContentSid).setContentVariables(variablesJson).create();
+
+			System.out.println("✅ WhatsApp enrollment utility sent to " + toWhatsApp);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }

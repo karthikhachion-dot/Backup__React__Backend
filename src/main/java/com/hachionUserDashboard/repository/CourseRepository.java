@@ -1,6 +1,7 @@
 package com.hachionUserDashboard.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -81,5 +82,11 @@ public interface CourseRepository extends JpaRepository<Course, Integer> {
 			""", nativeQuery = true)
 	long existsByCategoryAndCourseName(@Param("courseCategory") String courseCategory,
 			@Param("courseName") String courseName);
+
+	@Query("select c.numberOfClasses from Course c where c.courseName = :courseName")
+	Optional<String> findNumberOfClassesByCourseName(@Param("courseName") String courseName);
+
+	@Query(value = "SELECT number_of_classes FROM course WHERE course_name = :courseName LIMIT 1", nativeQuery = true)
+	String findAboutCourseByCourseName(@Param("courseName") String courseName);
 
 }

@@ -21,6 +21,7 @@ public class PaymentRequest {
 	private String status;
 	private String invoiceNumber;
 	private String paymentDate;
+	private String currencyCode;
 
 	private List<PaymentInstallmentRequest> installments;
 
@@ -167,5 +168,14 @@ public class PaymentRequest {
 	public void setPaymentDate(String paymentDate) {
 		this.paymentDate = paymentDate;
 	}
+
+	public String getCurrencyCode() {
+		return currencyCode;
+	}
+
+	public void setCurrencyCode(String currencyCode) {
+		this.currencyCode = currencyCode;
+	}
+
 
 }
