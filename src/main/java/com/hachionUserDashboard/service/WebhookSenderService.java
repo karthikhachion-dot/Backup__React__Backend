@@ -16,6 +16,7 @@ import com.hachionUserDashboard.dto.AskQueryWebhookRequest;
 import com.hachionUserDashboard.dto.TalkToOurAdvisorRequest;
 import com.hachionUserDashboard.entity.Enroll;
 import com.hachionUserDashboard.entity.FaqQuery;
+import com.hachionUserDashboard.entity.InstructorApplication;
 import com.hachionUserDashboard.entity.PaymentTransaction;
 import com.hachionUserDashboard.entity.Query;
 import com.hachionUserDashboard.entity.RegisterStudent;
@@ -40,6 +41,9 @@ public class WebhookSenderService {
 	private static final String REQUEST_INSTALLMENT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAAAQsgUn_0/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=NanGSY8MMpEk59rTvI1L_GW9dKRYQqySb22w0L8qm7w";
 
 	private static final String CORPORTATE_TRAINIG = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
+
+	// Trainer Hunt
+	private final String BECOME_INSTRUCTOR = "https://chat.googleapis.com/v1/spaces/AAQASCl2Z5o/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=a64MwaaFraJUGIVNL5kt7MgIwtFlJ-QeK8ZXK7dTOlw";
 
 	public void sendRegistrationDetailsOnline(RegisterStudent student) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -476,5 +480,28 @@ public class WebhookSenderService {
 		} catch (Exception e) {
 			System.err.println("❌ Failed to send FAQ Ask a Question webhook: " + e.getMessage());
 		}
+	}
+
+	public void sendInstructorApplication(InstructorApplication app) {
+
+		String currentDate = java.time.LocalDate.now()
+				.format(java.time.format.DateTimeFormatter.ofPattern("MMM-dd-yyyy"));
+
+		String message = String.format(
+				"*📢 New Instructor Application*\n\n" + "*Date:* %s\n" + "*Name:* %s\n" + "*Email:* %s\n"
+						+ "*Mobile:* %s\n" + "*Location:* %s\n" + "*Skills:* %s\n" + "*Area:* %s\n"
+						+ "*Experience:* %s\n" + "*Mode:* %s\n" + "*Portfolio Link:* %s\n" + "*Comment:* %s",
+				currentDate, app.getName(), app.getEmail(), app.getMobile(), app.getLocation(), app.getSkill(),
+				app.getArea(), app.getExperience(), app.getMode(), app.getLink(), app.getComment());
+
+		Map<String, String> payload = new HashMap<>();
+		payload.put("text", message);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<Map<String, String>> request = new HttpEntity<>(payload, headers);
+
+		restTemplate.postForEntity(BECOME_INSTRUCTOR, request, String.class);
 	}
 }

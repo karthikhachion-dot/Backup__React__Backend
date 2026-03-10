@@ -99,6 +99,13 @@ public class RazorpayController {
 		List<PaymentTransactionResponse> responses = razorpayService.getAllRequestInstallmetns();
 		return ResponseEntity.ok(responses);
 	}
+	@DeleteMapping("/delete-installment-request")
+	public ResponseEntity<String> deleteInstallmentRequest(@RequestParam String studentId, @RequestParam String email,
+			@RequestParam String courseName, @RequestParam String batchId) {
+
+		String response = razorpayService.deleteInstallmentRequest(studentId, email, courseName, batchId);
+		return ResponseEntity.ok(response);
+	}
 
 	@PutMapping("/update-status/{transactionId}")
 	public ResponseEntity<String> updateRequestStatus(@PathVariable Long transactionId,

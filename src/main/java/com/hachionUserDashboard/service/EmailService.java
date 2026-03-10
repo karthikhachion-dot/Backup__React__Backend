@@ -271,6 +271,8 @@ public class EmailService {
 			String safeUserName = userName != null ? userName : "Student";
 			String safeEmail = toEmail != null ? toEmail : "";
 			String safePassword = tempPassword != null ? tempPassword : "Hach@123";
+			
+			String currentYear = String.valueOf(java.time.LocalDate.now().getYear());
 
 //			ClassPathResource resource = new ClassPathResource("templates/register_offline_students_email.html");
 //			String htmlContent = Files.readString(resource.getFile().toPath(), StandardCharsets.UTF_8);
@@ -282,7 +284,7 @@ public class EmailService {
 			}
 
 			htmlContent = htmlContent.replace("[Student First Name]", safeUserName)
-					.replace("[Student Email]", safeEmail).replace("Hach@123", safePassword);
+					.replace("[Student Email]", safeEmail).replace("Hach@123", safePassword).replace("[Year]", currentYear);
 
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -311,13 +313,15 @@ public class EmailService {
 					: studentFullName;
 
 			String safeUserName = userName != null ? userName : "Student";
+			
+			String currentYear = String.valueOf(java.time.LocalDate.now().getYear());
 
 			ClassPathResource resource = new ClassPathResource("templates/register_online_students_email.html");
 			String htmlContent;
 			try (InputStream inputStream = resource.getInputStream()) {
 				htmlContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 			}
-			htmlContent = htmlContent.replace("[Student First Name]", safeUserName);
+			htmlContent = htmlContent.replace("[Student First Name]", safeUserName).replace("[Year]", currentYear);;
 
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -337,6 +341,7 @@ public class EmailService {
 			throw new MessagingException("Failed to send welcome email", e);
 		}
 	}
+
 
 	public void sendEmailForEnrollForLiveDemo(String toEmail, String technologyName, String day, String date,
 			String time, String timezone, String googleMeetLink, String meetingId, String passcode,

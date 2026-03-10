@@ -535,4 +535,16 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		}
 		paymentTransactionRepository.deleteById(id);
 	}
+	@Override
+	public String deleteInstallmentRequest(String studentId, String email, String courseName, String batchId) {
+
+	    int deletedRows = paymentTransactionRepository.deleteInstallmentRequest(
+	            studentId, email, courseName, batchId);
+
+	    if (deletedRows > 0) {
+	        return "Installment request deleted successfully";
+	    } else {
+	        return "This record already Approved/Rejected so not able to delete";
+	    }
+	}
 }

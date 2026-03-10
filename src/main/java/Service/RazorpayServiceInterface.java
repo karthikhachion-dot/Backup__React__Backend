@@ -39,4 +39,6 @@ public interface RazorpayServiceInterface {
 	PaymentTransaction getTransactionById(Long transactionId);
 
 	public void deletePaymentById(Long id);
+
+	String deleteInstallmentRequest(String studentId, String email, String courseName, String batchId);
 }

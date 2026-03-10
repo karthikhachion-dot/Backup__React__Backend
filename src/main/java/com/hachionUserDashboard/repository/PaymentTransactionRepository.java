@@ -75,4 +75,19 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 	@Query(value = "SELECT * FROM payment_transactions " + "WHERE number_of_installments > 0 "
 			+ "OR number_of_installments IS NULL " + "ORDER BY request_date DESC", nativeQuery = true)
 	List<PaymentTransaction> findRequestedInstallments();
+	
+	@Modifying
+	@Transactional
+	@Query(value = "DELETE FROM payment_transactions " +
+	        "WHERE student_id = :studentId " +
+	        "AND payer_email = :email " +
+	        "AND course_name = :courseName " +
+	        "AND batch_id = :batchId " +
+	        "AND (request_status IS NULL OR LOWER(request_status) NOT IN ('approved','rejected'))",
+	        nativeQuery = true)
+	int deleteInstallmentRequest(
+	        @Param("studentId") String studentId,
+	        @Param("email") String email,
+	        @Param("courseName") String courseName,
+	        @Param("batchId") String batchId);
 }
