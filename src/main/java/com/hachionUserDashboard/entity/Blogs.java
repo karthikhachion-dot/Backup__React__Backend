@@ -54,6 +54,18 @@ public class Blogs {
 	@Column(name = "date", nullable = false)
 
 	private LocalDate date;
+	
+	@Column(name ="short_title")
+	private String shortTitle;
+
+	
+	public String getShortTitle() {
+		return shortTitle;
+	}
+
+	public void setShortTitle(String shortTitle) {
+		this.shortTitle = shortTitle;
+	}
 
 	public Blogs() {
 	}
@@ -177,5 +189,6 @@ public class Blogs {
 	public void setAuthorImage(String authorImage) {
 		this.authorImage = authorImage;
 	}
+
 
 }

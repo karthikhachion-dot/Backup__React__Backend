@@ -71,8 +71,8 @@ public class PaymentServiceImpl implements PaymentService {
 	@Autowired
 	private WhatsAppService whatsAppService;
 
-//	@Autowired
-//	private WebhookSenderService webhookSenderService;
+	@Autowired
+	private WebhookSenderService webhookSenderService;
 
 	@Value("${payments.upload.path}")
 	private String paymentsUploadPath;
@@ -96,6 +96,12 @@ public class PaymentServiceImpl implements PaymentService {
 		payment.setNumberOfDays(paymentRequest.getNoOfDays());
 		payment.setTotalAmount(paymentRequest.getTotalAmount());
 		payment.setBalancePay(paymentRequest.getBalancePay());
+		if (paymentRequest.getBalancePay() != null && paymentRequest.getBalancePay() == 0) {
+		    payment.setStopReminder("stop");
+		} else {
+		    payment.setStopReminder("start"); // optional default
+		}
+		
 		if (Double.compare(paymentRequest.getTotalAmount(), paymentRequest.getBalancePay()) == 0) {
 			payment.setStatus("Not Paid");
 		} else if (Double.compare(paymentRequest.getBalancePay(), 0.0) == 0) {
@@ -214,10 +220,10 @@ public class PaymentServiceImpl implements PaymentService {
 		String batchTiming = "N/A";
 		String trainingCoordinator = "N/A";
 
-//		webhookSenderService.sendPaymentReceivedOffline(savedPayment.getStudentId(), savedPayment.getStudentName(),
-//				savedPayment.getEmail(), savedPayment.getMobile(), savedPayment.getCourseName(),
-//				savedPayment.getInvoiceNumber(), savedPayment.getTotalAmount(), receivedPayment, nextPayment,
-//				nextPaymentDate, trainers, batchId, batchTiming, trainingCoordinator);
+		webhookSenderService.sendPaymentReceivedOffline(savedPayment.getStudentId(), savedPayment.getStudentName(),
+				savedPayment.getEmail(), savedPayment.getMobile(), savedPayment.getCourseName(),
+				savedPayment.getInvoiceNumber(), savedPayment.getTotalAmount(), receivedPayment, nextPayment,
+				nextPaymentDate, trainers, batchId, batchTiming, trainingCoordinator);
 
 		return createPaymentResponse(savedPayment);
 	}
@@ -263,9 +269,14 @@ public class PaymentServiceImpl implements PaymentService {
 			payment.setNumberOfDays(paymentRequest.getNoOfDays());
 		if (paymentRequest.getTotalAmount() != null)
 			payment.setTotalAmount(paymentRequest.getTotalAmount());
+		
 		if (paymentRequest.getBalancePay() != null)
 			payment.setBalancePay(paymentRequest.getBalancePay());
-
+		if (paymentRequest.getBalancePay() == 0) {
+	        payment.setStopReminder("stop");
+	    } else {
+	        payment.setStopReminder("start"); // optional
+	    }
 		if (Double.compare(paymentRequest.getTotalAmount(), paymentRequest.getBalancePay()) == 0) {
 			payment.setStatus("Not Paid");
 		} else if (Double.compare(paymentRequest.getBalancePay(), 0.0) == 0) {
@@ -442,6 +453,7 @@ public class PaymentServiceImpl implements PaymentService {
 		response.setBalancePay(savedPayment.getBalancePay());
 		response.setInvoiceNumber(savedPayment.getInvoiceNumber());
 		response.setStatus(savedPayment.getStatus());
+		response.setStopReminder(savedPayment.getStopReminder());
 
 		List<PaymentInstallmentResponse> installmentResponses = new ArrayList<>();
 		for (PaymentInstallment savedInstallment : savedPayment.getInstallments()) {
@@ -1063,11 +1075,11 @@ public class PaymentServiceImpl implements PaymentService {
 
 			try {
 
-//				webhookSenderService.sendPaymentReminder(p.getStudentId(), p.getStudentName(), p.getEmail(),
-//						p.getMobile(), p.getCourseName(), p.getInvoiceNumber(),
-//						(p.getBalancePay() == null ? 0.0 : p.getBalancePay()),
-//						(p.getTotalAmount() == null ? 0.0 : p.getTotalAmount()), duePi.getDueDate(), lastReceived,
-//						lastPayDate);
+				webhookSenderService.sendPaymentReminder(p.getStudentId(), p.getStudentName(), p.getEmail(),
+						p.getMobile(), p.getCourseName(), p.getInvoiceNumber(),
+						(p.getBalancePay() == null ? 0.0 : p.getBalancePay()),
+						(p.getTotalAmount() == null ? 0.0 : p.getTotalAmount()), duePi.getDueDate(), lastReceived,
+						lastPayDate);
 
 				LocalDate dueDate = duePi.getDueDate();
 				if (dueDate != null && dueDate.isEqual(headsUpDate)) {
@@ -1150,5 +1162,21 @@ public class PaymentServiceImpl implements PaymentService {
 
 		return ((daysOverdue - 7) % 7 == 0);
 	}
+	@Transactional
+	public int updateStopReminder(String stopReminder, String courseName, String studentId, String email) {
 
+	    int updated = paymentRepository.updateStopReminderNative(stopReminder, courseName, studentId, email);
+
+	    // Get the payment using the same keys
+	    Payment payment = paymentRepository
+	            .findByCourseNameAndStudentIdAndEmail(courseName, studentId, email)
+	            .orElse(null);
+
+	    if (payment != null) {
+	        // Send notification to chat
+	        webhookSenderService.sendStopReminderNotification(payment);
+	    }
+
+	    return updated;
+	}
 }

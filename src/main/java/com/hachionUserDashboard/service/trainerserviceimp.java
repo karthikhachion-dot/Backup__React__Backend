@@ -6,7 +6,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hachionUserDashboard.dto.TrainerRequest;
+import com.hachionUserDashboard.dto.TrainerSummaryDTO;
 import com.hachionUserDashboard.entity.Trainer;
 import com.hachionUserDashboard.repository.TrainerRepository;
 import com.hachionUserDashboard.repository.UserReviewRepository;
@@ -190,9 +193,24 @@ public class trainerserviceimp implements TrainerService {
 		trainerRepo.deleteById(trainerId);
 		deleteImageIfExists(imagePath);
 	}
-	
+
 	@Override
 	public List<Trainer> getTrainersByCourseName(String courseName) {
-	    return trainerRepo.findTrainersByCourseName(courseName);
+		return trainerRepo.findTrainersByCourseName(courseName);
+	}
+
+	@Override
+	public List<Map<String, Object>> getTrainerSummaries() {
+
+	    List<Object[]> rows = trainerRepo.getTrainerSummaries();
+
+	    return rows.stream().map(row -> {
+	        Map<String, Object> map = new HashMap<>();
+	        map.put("trainerName", row[0]);
+	        map.put("courseName", row[1]);
+//	        map.put("trainerImage", row[2]);
+//	        map.put("trainerRating", row[2]);
+	        return map;
+	    }).toList();
 	}
 }

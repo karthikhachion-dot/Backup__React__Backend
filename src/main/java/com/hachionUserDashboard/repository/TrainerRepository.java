@@ -15,7 +15,7 @@ public interface TrainerRepository extends JpaRepository<Trainer, Integer> {
 //	@Query("SELECT t.summary FROM Trainer t WHERE t.trainer_name = :trainerName")
 //	String findSummaryByTrainerName(@Param("trainerName") String trainerName);
 
-	@Query("SELECT t.summary FROM Trainer t WHERE t.trainer_name = :trainerName AND t.course_name = :courseName")
+	@Query(value = "SELECT summary FROM trainer WHERE trainer_name = :trainerName AND course_name = :courseName LIMIT 1", nativeQuery = true)
 	String findSummaryByTrainerNameAndCourse(@Param("trainerName") String trainerName,
 			@Param("courseName") String courseName);
 
@@ -61,5 +61,13 @@ public interface TrainerRepository extends JpaRepository<Trainer, Integer> {
 
 	@Query(value = "SELECT * FROM trainer WHERE LOWER(course_name) = LOWER(:courseName) ORDER BY trainer_id ASC", nativeQuery = true)
 	List<Trainer> findTrainersByCourseName(@Param("courseName") String courseName);
+
+	@Query(value = """
+			    SELECT
+			        trainer_name,
+			        course_name
+			    FROM trainer
+			""", nativeQuery = true)
+	List<Object[]> getTrainerSummaries();
 
 }

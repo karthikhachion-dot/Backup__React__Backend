@@ -19,6 +19,7 @@ public class PaymentResponse {
     private Double balancePay;
     private String invoiceNumber;
     private String status;
+    private String stopReminder;
 
     private List<PaymentInstallmentResponse> paymentInstallmentsResponse;
 
@@ -148,6 +149,22 @@ public class PaymentResponse {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public String getStopReminder() {
+		return stopReminder;
+	}
+
+	public void setStopReminder(String stopReminder) {
+		this.stopReminder = stopReminder;
+	}
+
+	public List<PaymentInstallmentResponse> getPaymentInstallmentsResponse() {
+		return paymentInstallmentsResponse;
+	}
+
+	public void setPaymentInstallmentsResponse(List<PaymentInstallmentResponse> paymentInstallmentsResponse) {
+		this.paymentInstallmentsResponse = paymentInstallmentsResponse;
 	}
 
     

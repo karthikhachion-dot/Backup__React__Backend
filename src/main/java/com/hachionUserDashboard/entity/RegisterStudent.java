@@ -3,14 +3,19 @@ package com.hachionUserDashboard.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.Temporal;
+import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -56,8 +61,8 @@ public class RegisterStudent {
 	@Column(nullable = true)
 	private String source;
 
-	@Column(nullable = true)
-	private String remarks;
+//	@Column(nullable = true)
+//	private String remarks;
 
 	@Column(nullable = true)
 	private String comments;
@@ -130,6 +135,25 @@ public class RegisterStudent {
 
 	@Column(nullable = true)
 	private String github;
+
+	@Column(name = "seo_team")
+	private String seoTeam;
+
+//	@Column(name = "technology")
+//	private String technology;
+
+	@Column(name = "state_city")
+	private String stateCity;
+
+	@Column(name = "coordinator")
+	private String coordinator;
+	
+	@Column(name = "lead_status")
+	private String leadStatus;
+
+	@JsonIgnore
+	@OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<StudentRemarksHistory> remarksHistory;
 
 	public String getWhatsapp() {
 		return whatsapp;
@@ -227,13 +251,13 @@ public class RegisterStudent {
 		this.source = source;
 	}
 
-	public String getRemarks() {
-		return remarks;
-	}
-
-	public void setRemarks(String remarks) {
-		this.remarks = remarks;
-	}
+//	public String getRemarks() {
+//		return remarks;
+//	}
+//
+//	public void setRemarks(String remarks) {
+//		this.remarks = remarks;
+//	}
 
 	public String getComments() {
 		return comments;
@@ -357,7 +381,7 @@ public class RegisterStudent {
 		this.time_zone = time_zone;
 		this.analyst_name = analyst_name;
 		this.source = source;
-		this.remarks = remarks;
+//		this.remarks = remarks;
 		this.comments = comments;
 		this.send_details = send_details;
 		this.additional_email = additional_email;
@@ -379,17 +403,17 @@ public class RegisterStudent {
 		this.bio = bio;
 	}
 
-	@Override
-	public String toString() {
-		return "RegisterStudent [id=" + id + ", studentId=" + studentId + ", email=" + email + ", mobile=" + mobile
-				+ ", password=" + password + ", country=" + country + ", location=" + location + ", visa_status="
-				+ visa_status + ", time_zone=" + time_zone + ", analyst_name=" + analyst_name + ", source=" + source
-				+ ", remarks=" + remarks + ", comments=" + comments + ", send_details=" + send_details
-				+ ", additional_email=" + additional_email + ", additional_phone=" + additional_phone + ", course_name="
-				+ course_name + ", firstName=" + firstName + ", lastName=" + lastName + ", userName=" + userName
-				+ ", OTP=" + OTP + ", OTPStatus=" + OTPStatus + ", otpGeneratedTime=" + otpGeneratedTime + ", mode="
-				+ mode + "]";
-	}
+//	@Override
+//	public String toString() {
+//		return "RegisterStudent [id=" + id + ", studentId=" + studentId + ", email=" + email + ", mobile=" + mobile
+//				+ ", password=" + password + ", country=" + country + ", location=" + location + ", visa_status="
+//				+ visa_status + ", time_zone=" + time_zone + ", analyst_name=" + analyst_name + ", source=" + source
+//				+ ", remarks=" + remarks + ", comments=" + comments + ", send_details=" + send_details
+//				+ ", additional_email=" + additional_email + ", additional_phone=" + additional_phone + ", course_name="
+//				+ course_name + ", firstName=" + firstName + ", lastName=" + lastName + ", userName=" + userName
+//				+ ", OTP=" + OTP + ", OTPStatus=" + OTPStatus + ", otpGeneratedTime=" + otpGeneratedTime + ", mode="
+//				+ mode + "]";
+//	}
 
 	public RegisterStudent() {
 		super();
@@ -497,6 +521,54 @@ public class RegisterStudent {
 
 	public void setGithub(String github) {
 		this.github = github;
+	}
+
+	public String getSeoTeam() {
+		return seoTeam;
+	}
+
+	public void setSeoTeam(String seoTeam) {
+		this.seoTeam = seoTeam;
+	}
+
+//	public String getTechnology() {
+//		return technology;
+//	}
+//
+//	public void setTechnology(String technology) {
+//		this.technology = technology;
+//	}
+
+	public String getStateCity() {
+		return stateCity;
+	}
+
+	public void setStateCity(String stateCity) {
+		this.stateCity = stateCity;
+	}
+
+	public String getCoordinator() {
+		return coordinator;
+	}
+
+	public void setCoordinator(String coordinator) {
+		this.coordinator = coordinator;
+	}
+
+	public List<StudentRemarksHistory> getRemarksHistory() {
+		return remarksHistory;
+	}
+
+	public void setRemarksHistory(List<StudentRemarksHistory> remarksHistory) {
+		this.remarksHistory = remarksHistory;
+	}
+
+	public String getLeadStatus() {
+		return leadStatus;
+	}
+
+	public void setLeadStatus(String leadStatus) {
+		this.leadStatus = leadStatus;
 	}
 
 }

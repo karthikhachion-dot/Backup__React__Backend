@@ -49,8 +49,8 @@ public class RazorpayController {
 	@PostMapping("/capture-razorpay")
 	public String capturePayment(@RequestParam String paymentId, @RequestParam String orderId,
 			@RequestParam String signature, @RequestParam String studentId, @RequestParam String courseName,
-			@RequestParam String batchId) {
-		return razorpayService.captureOrder(paymentId, orderId, signature, studentId, courseName, batchId);
+			@RequestParam String batchId, @RequestParam(value = "couponCode", required = false) String couponCode) {
+		return razorpayService.captureOrder(paymentId, orderId, signature, studentId, courseName, batchId, couponCode);
 	}
 
 	@PostMapping("/capture-razorpay-installments")
@@ -99,6 +99,7 @@ public class RazorpayController {
 		List<PaymentTransactionResponse> responses = razorpayService.getAllRequestInstallmetns();
 		return ResponseEntity.ok(responses);
 	}
+
 	@DeleteMapping("/delete-installment-request")
 	public ResponseEntity<String> deleteInstallmentRequest(@RequestParam String studentId, @RequestParam String email,
 			@RequestParam String courseName, @RequestParam String batchId) {
@@ -106,6 +107,14 @@ public class RazorpayController {
 		String response = razorpayService.deleteInstallmentRequest(studentId, email, courseName, batchId);
 		return ResponseEntity.ok(response);
 	}
+//	@PutMapping("/update-status/{transactionId}")
+//	public ResponseEntity<String> updateRequestStatus(@PathVariable Long transactionId,
+//			@RequestParam String requestStatus) {
+//
+//		razorpayService.updateInstallmentRequestStatus(transactionId, requestStatus);
+//		
+//		return ResponseEntity.ok("Request status updated successfully.");
+//	}
 
 	@PutMapping("/update-status/{transactionId}")
 	public ResponseEntity<String> updateRequestStatus(@PathVariable Long transactionId,
@@ -123,15 +132,6 @@ public class RazorpayController {
 
 		return ResponseEntity.ok("Request status updated successfully.");
 	}
-
-//	@GetMapping("/checkInstallment")
-//	public ResponseEntity<InstallmentStatusResponse> checkInstallment(@RequestParam String studentId,
-//			@RequestParam String courseName) {
-//
-//		InstallmentStatusResponse response = razorpayService.getLatestStatus(studentId, courseName);
-//
-//		return ResponseEntity.ok(response);
-//	}
 
 	@GetMapping("/checkInstallment")
 	public ResponseEntity<InstallmentStatusResponse> checkInstallment(@RequestParam String studentId,
@@ -157,5 +157,4 @@ public class RazorpayController {
 		razorpayService.deletePaymentById(id);
 		return ResponseEntity.ok("Payment deleted successfully");
 	}
-	
 }

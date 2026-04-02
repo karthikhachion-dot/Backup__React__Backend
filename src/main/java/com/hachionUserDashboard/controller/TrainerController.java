@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hachionUserDashboard.dto.TrainerRequest;
+import com.hachionUserDashboard.dto.TrainerSummaryDTO;
 import com.hachionUserDashboard.entity.Trainer;
 import com.hachionUserDashboard.repository.TrainerRepository;
 
@@ -81,42 +82,36 @@ public class TrainerController {
 	}
 
 	@PostMapping(value = "/trainer/add", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> createTrainer(
-	        @RequestPart("trainerData") String trainerData,
-	        @RequestPart(value = "trainerImage", required = false) MultipartFile trainerImage) {
+	public ResponseEntity<?> createTrainer(@RequestPart("trainerData") String trainerData,
+			@RequestPart(value = "trainerImage", required = false) MultipartFile trainerImage) {
 
-	    try {
-	        ObjectMapper mapper = new ObjectMapper();
-	        mapper.registerModule(new JavaTimeModule());
-	        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(new JavaTimeModule());
+			mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-	        Trainer trainer = mapper.readValue(trainerData, Trainer.class);
+			Trainer trainer = mapper.readValue(trainerData, Trainer.class);
 
-	        boolean exists = repo.existsByNameAndCategoryAndCourse(
-	                trainer.getTrainer_name(),
-	                trainer.getCategory_name(),
-	                trainer.getCourse_name()
-	        );
+			boolean exists = repo.existsByNameAndCategoryAndCourse(trainer.getTrainer_name(),
+					trainer.getCategory_name(), trainer.getCourse_name());
 
-	        if (exists) {
-	            return ResponseEntity.status(HttpStatus.CONFLICT)
-	                    .body("Trainer with the same name, category, and course already exists.");
-	        }
+			if (exists) {
+				return ResponseEntity.status(HttpStatus.CONFLICT)
+						.body("Trainer with the same name, category, and course already exists.");
+			}
 
-	        Trainer savedTrainer = trainerservice.addTrainer(trainer, trainerImage);
-	        return ResponseEntity.status(HttpStatus.CREATED).body(savedTrainer);
+			Trainer savedTrainer = trainerservice.addTrainer(trainer, trainerImage);
+			return ResponseEntity.status(HttpStatus.CREATED).body(savedTrainer);
 
-	    } catch (IOException e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-	                .body("Invalid trainerData JSON: " + e.getMessage());
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error adding trainer: " + e.getMessage());
-	    }
+		} catch (IOException e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid trainerData JSON: " + e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error adding trainer: " + e.getMessage());
+		}
 	}
-
 
 	/*
 	 * @PutMapping("trainer/update/{id}") public Trainer
@@ -126,35 +121,32 @@ public class TrainerController {
 	 */
 
 	@PutMapping(value = "/trainer/update/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-	public ResponseEntity<?> updateTrainer(@PathVariable int id,
-	                                       @RequestPart("trainerData") String trainerData,
-	                                       @RequestPart(value = "trainerImage", required = false) MultipartFile trainerImage) {
+	public ResponseEntity<?> updateTrainer(@PathVariable int id, @RequestPart("trainerData") String trainerData,
+			@RequestPart(value = "trainerImage", required = false) MultipartFile trainerImage) {
 
-	    try {
-	        ObjectMapper mapper = new ObjectMapper();
-	        mapper.registerModule(new JavaTimeModule());
-	        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(new JavaTimeModule());
+			mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-	        Trainer updatedTrainer = mapper.readValue(trainerData, Trainer.class);
+			Trainer updatedTrainer = mapper.readValue(trainerData, Trainer.class);
 
-	        if (updatedTrainer.getDate() == null) {
-	            updatedTrainer.setDate(LocalDate.now());
-	        }
+			if (updatedTrainer.getDate() == null) {
+				updatedTrainer.setDate(LocalDate.now());
+			}
 
-	        Trainer saved = trainerservice.updateTrainer(id, updatedTrainer, trainerImage);
-	        return ResponseEntity.ok(saved);
+			Trainer saved = trainerservice.updateTrainer(id, updatedTrainer, trainerImage);
+			return ResponseEntity.ok(saved);
 
-	    } catch (RuntimeException e) {
-	        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-	    } catch (IOException e) {
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-	                .body("Invalid trainerData JSON: " + e.getMessage());
-	    } catch (Exception e) {
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                .body("Error updating trainer: " + e.getMessage());
-	    }
+		} catch (RuntimeException e) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+		} catch (IOException e) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid trainerData JSON: " + e.getMessage());
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error updating trainer: " + e.getMessage());
+		}
 	}
-
 
 	@DeleteMapping("trainer/delete/{id}")
 	public ResponseEntity<?> deleteTrainer(@PathVariable int id) {
@@ -184,15 +176,21 @@ public class TrainerController {
 	public void setTrainerservice(TrainerService trainerservice) {
 		this.trainerservice = trainerservice;
 	}
+
 	@GetMapping("/trainernames/by-course")
 	public ResponseEntity<List<String>> getTrainerNamesByCourse(@RequestParam String courseName) {
 
-	    List<String> trainerNames = repo.gettingTrainerNamesByCourse(courseName);
-	    return ResponseEntity.ok(trainerNames);
-	}
-	@GetMapping("/coursedetails/by-course")
-	public ResponseEntity<List<Trainer>> getTrainerDetails(@RequestParam String courseName) {
-	    return ResponseEntity.ok(trainerservice.getTrainersByCourseName(courseName));
+		List<String> trainerNames = repo.gettingTrainerNamesByCourse(courseName);
+		return ResponseEntity.ok(trainerNames);
 	}
 
+	@GetMapping("/coursedetails/by-course")
+	public ResponseEntity<List<Trainer>> getTrainerDetails(@RequestParam String courseName) {
+		return ResponseEntity.ok(trainerservice.getTrainersByCourseName(courseName));
+	}
+
+	@GetMapping("/trainers/summary")
+	public List<Map<String, Object>> getTrainerSummaries() {
+		return trainerservice.getTrainerSummaries();
+	}
 }

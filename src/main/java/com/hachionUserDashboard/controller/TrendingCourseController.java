@@ -34,6 +34,10 @@ public class TrendingCourseController {
 		return repo.findAll();
 	}
 
+	@GetMapping("/trendingcourse/active")
+	public List<TrendingCourse> getActiveTrendingCourses() {
+	    return repo.getActiveTrendingCourses();
+	}
 	@PostMapping("/trendingcourse/add")
 	@ResponseStatus(code = HttpStatus.CREATED)
 	public ResponseEntity<String> createTrendingCourse(@RequestBody TrendingCourse trendingcourse) {

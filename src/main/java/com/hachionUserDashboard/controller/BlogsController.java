@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -31,8 +32,11 @@ import org.springframework.web.multipart.MultipartFile;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.hachionUserDashboard.dto.BlogInquiryRequest;
 import com.hachionUserDashboard.entity.Blogs;
+import com.hachionUserDashboard.exception.ResourceNotFoundException;
 import com.hachionUserDashboard.repository.BlogRepository;
+import com.hachionUserDashboard.service.WebhookSenderService;
 
 import jakarta.annotation.PostConstruct;
 
@@ -48,6 +52,10 @@ public class BlogsController {
 	private String upload;
 
 	private String uploadDir;
+	
+	@Autowired
+	private WebhookSenderService webhookSenderService;
+	
 
 	@PostConstruct
 	public void initUploadDir() {
@@ -158,13 +166,28 @@ public class BlogsController {
 
 				Blogs updatedBlog = objectMapper.readValue(blogData, Blogs.class);
 
+				String shortTitle = updatedBlog.getShortTitle();
+
+				if (!shortTitle.matches("^[A-Za-z ]+$")) {
+				    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				            .body("ShortTitle must contain only alphabets and spaces. Numbers, hyphens (-), and special characters are not allowed.");
+				}
+
+				// Duplicate check excluding current blog
+				if (repo.existsByShortTitleAndIdNot(shortTitle, id)) {
+				    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				            .body("ShortTitle already exists in the system");
+				}
+
 				blog.setCategory_name(updatedBlog.getCategory_name());
 				blog.setTitle(updatedBlog.getTitle());
+				blog.setShortTitle(updatedBlog.getShortTitle());
 				blog.setAuthor(updatedBlog.getAuthor());
 				blog.setDescription(updatedBlog.getDescription());
 				blog.setMeta_description(updatedBlog.getMeta_description());
 				blog.setMeta_keyword(updatedBlog.getMeta_keyword());
 				blog.setMeta_title(updatedBlog.getMeta_title());
+
 //                blog.setDate(LocalDate.now());
 
 				// Replace blog image if a new one is uploaded
@@ -236,6 +259,7 @@ public class BlogsController {
 			}
 		}).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Blog not found with ID: " + id));
 	}
+
 
 	@GetMapping("/blog/download/{type}/{filename}")
 	public ResponseEntity<Resource> downloadFile(@PathVariable String type, @PathVariable String filename) {
@@ -368,6 +392,47 @@ public class BlogsController {
 
 		List<Object[]> blogs = repo.findByCategoriesForList(categories);
 		return ResponseEntity.ok(blogs);
+	}
+	@GetMapping("/blog/slug/{slug}")
+	public ResponseEntity<Blogs> getBlogBySlug(@PathVariable String slug) {
+
+		return repo.findBySlug(slug).map(ResponseEntity::ok)
+				.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+	}
+
+	@GetMapping("/blog/shortTitle")
+	public ResponseEntity<String> checkShortTitle(@RequestParam String shortTitle) {
+
+		if (!shortTitle.matches("^[A-Za-z ]+$")) {
+			throw new ResourceNotFoundException(
+					"ShortTitle must contain only alphabets and spaces. Numbers, hyphens (-), and special characters are not allowed.");
+		}
+
+		if (repo.existsByShortTitle(shortTitle)) {
+			throw new ResourceNotFoundException("ShortTitle already exists in the system");
+		}
+
+		return ResponseEntity.ok("ShortTitle is available");
+	}
+
+	@GetMapping("/blog/check/{shortTitle}")
+	public ResponseEntity<Blogs> getBlogByShortTitle(@PathVariable String shortTitle) {
+
+		return repo.findBlogByShortTitle(shortTitle).map(ResponseEntity::ok)
+				.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+	}
+
+	@PostMapping("/blog/inquiry")
+	public ResponseEntity<?> handleInquiry(@RequestBody BlogInquiryRequest request) {
+
+		try {
+			webhookSenderService.sendToBlogInquiryForm(request);
+
+			return ResponseEntity.ok("Sent to Google Chat successfully");
+
+		} catch (Exception e) {
+			return ResponseEntity.status(500).body("Failed to send message");
+		}
 	}
 
 }

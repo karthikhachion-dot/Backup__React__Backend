@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import com.hachionUserDashboard.dto.DiscountCousesRequest;
 import com.hachionUserDashboard.dto.DiscountCousesResponse;
+import com.hachionUserDashboard.entity.DiscountCourses;
+import com.hachionUserDashboard.repository.DiscountCoursesRepository;
 
 import Service.DiscountCoursesServiceInterface;
 
@@ -17,6 +19,9 @@ public class DiscountCoursesController {
 
 	@Autowired
 	private DiscountCoursesServiceInterface discountService;
+
+	@Autowired
+	private DiscountCoursesRepository discountCoursesRepository;
 
 	@PostMapping
 	public ResponseEntity<DiscountCousesResponse> createCoupon(@RequestBody DiscountCousesRequest request) {
@@ -40,5 +45,10 @@ public class DiscountCoursesController {
 	public ResponseEntity<List<DiscountCousesResponse>> getAllCoupons() {
 		List<DiscountCousesResponse> responses = discountService.getAlCouponCodeDetails();
 		return ResponseEntity.ok(responses);
+	}
+
+	@GetMapping("/active")
+	public List<DiscountCourses> getDiscountsByCountry(@RequestParam String country) {
+		return discountCoursesRepository.getActiveDiscountsByCountry(country);
 	}
 }

@@ -14,7 +14,7 @@ public interface BlogRepository extends JpaRepository<Blogs, Integer> {
 	@Query(value = "SELECT * FROM blogs WHERE blog_pdf = :blogPdf", nativeQuery = true)
 	Optional<Blogs> findByExactPdfName(@Param("blogPdf") String blogPdf);
 
-	@Query(value = "SELECT id, category_name, title, author, author_image, blog_image, date FROM blogs ORDER BY id DESC LIMIT 8", nativeQuery = true)
+	@Query(value = "SELECT id, category_name, title, short_title, author, author_image, blog_image, date FROM blogs ORDER BY id DESC LIMIT 8", nativeQuery = true)
 	List<Object[]> findTop8ForRecentEntries();
 
 	@Query(value = "SELECT DISTINCT category_name FROM blogs ORDER BY category_name ASC", nativeQuery = true)
@@ -24,8 +24,10 @@ public interface BlogRepository extends JpaRepository<Blogs, Integer> {
 //			+ "WHERE category_name IN (:categories) " + "ORDER BY id DESC", nativeQuery = true)
 //	List<Object[]> findByCategoriesForList(@Param("categories") List<String> categories);
 
-	@Query(value = "SELECT id, category_name, title, author, author_image, blog_image, date " + "FROM blogs "
-			+ "WHERE category_name IN (:categories) " + "ORDER BY category_name DESC, id DESC", nativeQuery = true)
+	@Query(value = "SELECT id, category_name, title, short_title, author, author_image, blog_image, date " +
+	        "FROM blogs " +
+	        "WHERE category_name IN (:categories) " +
+	        "ORDER BY category_name DESC, id DESC", nativeQuery = true)
 	List<Object[]> findByCategoriesForList(@Param("categories") List<String> categories);
 
 	@Query(value = """
@@ -38,5 +40,16 @@ public interface BlogRepository extends JpaRepository<Blogs, Integer> {
 			    FROM blogs
 			""", nativeQuery = true)
 	List<Object[]> findAllBlogColumns();
+	
+	@Query(value = "SELECT * FROM blogs WHERE LOWER(REPLACE(title,' ','-')) = LOWER(:slug) LIMIT 1", nativeQuery = true)
+	Optional<Blogs> findBySlug(@Param("slug") String slug);
 
+	@Query("SELECT COUNT(b) > 0 FROM Blogs b WHERE b.shortTitle = :shortTitle")
+	boolean existsByShortTitle(@Param("shortTitle") String shortTitle);
+
+	@Query("SELECT COUNT(b) > 0 FROM Blogs b WHERE b.shortTitle = :shortTitle AND b.id != :id")
+	boolean existsByShortTitleAndIdNot(@Param("shortTitle") String shortTitle, @Param("id") int id);
+
+	@Query(value = "SELECT * FROM blogs WHERE short_title = :shortTitle", nativeQuery = true)
+	Optional<Blogs> findBlogByShortTitle(@Param("shortTitle") String shortTitle);
 }

@@ -1,12 +1,16 @@
 package com.hachionUserDashboard.repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.hachionUserDashboard.entity.UserReview;
+
+import jakarta.transaction.Transactional;
 
 public interface UserReviewRepository extends JpaRepository<UserReview, Integer> {
 	@Query(value = "SELECT * FROM userreview ur WHERE ur.course_name = :courseName", nativeQuery = true)
@@ -50,4 +54,12 @@ public interface UserReviewRepository extends JpaRepository<UserReview, Integer>
 	@Query(value = "SELECT * FROM userreview " + "WHERE course_name = :courseName "
 			+ "AND type = true", nativeQuery = true)
 	List<UserReview> findVisibleApprovedReviewsByCourse(@Param("courseName") String courseName);
+
+	@Modifying
+	@Transactional
+	@Query(value = "DELETE FROM userreview " + "WHERE name = :name " + "AND email = :email "
+			+ "AND course_name = :courseName " + "AND date = :date " + "AND (status IS NULL " + "     OR status = '' "
+			+ "     OR LOWER(TRIM(status)) NOT IN ('approved','rejected'))", nativeQuery = true)
+	int deleteReview(@Param("name") String name, @Param("email") String email, @Param("courseName") String courseName,
+			@Param("date") LocalDate date);
 }

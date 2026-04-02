@@ -64,23 +64,6 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		this.razorpayClient = new RazorpayClient(keyId, keySecret);
 	}
 
-//	@Override
-//	public String createOrder(Double amount) {
-//		try {
-//			JSONObject orderRequest = new JSONObject();
-//			int amountInPaise = (int) (amount * 100);
-//			orderRequest.put("amount", amountInPaise);
-//			orderRequest.put("currency", "INR");
-//			orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
-//
-//			Order order = razorpayClient.orders.create(orderRequest);
-//			return order.toString();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//			return "Error creating Razorpay order: " + e.getMessage();
-//		}
-//	}
-
 	@Override
 	public String createOrder(Double amount, String studentId, String courseName, String batchId) {
 		try {
@@ -111,7 +94,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 
 	@Override
 	public String captureOrder(String paymentId, String orderId, String signature, String studentId, String courseName,
-			String batchId) {
+			String batchId, String couponCode) {
 		try {
 
 			JSONObject options = new JSONObject();
@@ -138,6 +121,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			Optional<RegisterStudent> student = registerStudentRepository.findByStudentId(studentId);
 			String studentEmail = student.map(RegisterStudent::getEmail).orElse(payerEmail);
 			String studentName = student.map(RegisterStudent::getUserName).orElse("Student");
+			String studentMobile = student.map(RegisterStudent::getMobile).orElse("");
 
 			List<Object[]> result = courseRepository.findCourseFeeByCourseName(courseName);
 
@@ -171,6 +155,9 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			tx.setStudentId(studentId);
 			tx.setCourseName(courseName);
 			tx.setBatchId(batchId);
+			tx.setStudentName(studentName);
+			tx.setMobile(studentMobile);
+			tx.setCouponCode(couponCode);
 			tx.setPaymentDate(LocalDateTime.now());
 			tx.setCourseFee(courseFeeFromDb);
 			tx.setRawResponseJson(rawJson);
@@ -180,8 +167,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 
 			PaymentRequest paymentRequest = convertTransactionToPaymentRequest(tx, studentName, studentEmail);
 
-			PaymentTransaction save = paymentTransactionRepository.save(tx);
-
+			paymentTransactionRepository.save(tx);
 			return "✅ Razorpay transaction successful: " + paymentId + " (Status: " + status + ")";
 		} catch (Exception e) {
 			return "❌ Error capturing Razorpay order: " + e.getMessage();
@@ -220,6 +206,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			Optional<RegisterStudent> student = registerStudentRepository.findByStudentId(studentId);
 			String studentEmail = student.map(RegisterStudent::getEmail).orElse(payerEmail);
 			String studentName = student.map(RegisterStudent::getUserName).orElse("Student");
+			String studentMobile = student.map(RegisterStudent::getMobile).orElse("");
 
 			List<Object[]> result = courseRepository.findCourseFeeByCourseName(courseName);
 			Double courseFeeFromDb = null;
@@ -237,7 +224,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			double finalPrice = courseFee - discountAmount;
 
 			Optional<PaymentTransaction> existingTxOpt = paymentTransactionRepository
-					.findByStudentIdAndCourseName(studentId, courseName);
+					.findByStudentIdAndCourseName(studentId, courseName, batchId);
 
 			PaymentTransaction tx;
 			if (existingTxOpt.isPresent()) {
@@ -248,6 +235,8 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 				tx.setDiscount(discount);
 				tx.setPaymentDate(LocalDateTime.now());
 				tx.setIsInstallment(true);
+				tx.setStudentName(studentName);
+				tx.setMobile(studentMobile);
 				tx.setOrderId(orderId);
 				tx.setTransactionId(paymentId);
 				tx.setCheckboxClicked(
@@ -264,6 +253,8 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 				tx.setCurrency(currency);
 				tx.setDiscount(discount);
 				tx.setPaymentDate(LocalDateTime.now());
+				tx.setStudentName(studentName);
+				tx.setMobile(studentMobile);
 				tx.setIsInstallment(true);
 				tx.setOrderId(orderId);
 				tx.setTransactionId(paymentId);
@@ -291,11 +282,6 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 				child.setInstallmentNumber(newInstallmentNumber);
 				child.setInstallmentAmount(eachInstallmentAmount);
 				child.setPaidAmount(eachInstallmentAmount);
-				System.out.println(">>> Updating enroll.amount with total paid = " + child.getPaidAmount());
-
-				int updated = enrollRepository.updateAmountByStudentCourseBatchNative(child.getPaidAmount(), studentId,
-						courseName, batchId);
-				System.out.println(">>> Enroll rows updated = " + updated);
 				child.setPaymentDate(LocalDate.now());
 				child.setStatus("PAID");
 				child.setOrderId(orderId);
@@ -304,6 +290,9 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 				tx.getOnlinePaymentInstallments().add(child);
 				tx.setInstallmentCount(tx.getInstallmentCount() + 1);
 
+//				int updated = enrollRepository.incrementAmountByStudentCourseBatch(child.getPaidAmount(), studentId, courseName,
+//						batchId);
+//				System.out.println("Enroll rows updated = " + updated);
 			}
 
 			tx.setAmount(tx.getAmount() + totalPaid);
@@ -315,7 +304,6 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			tx.setCourseFee(finalPrice);
 
 			PaymentTransaction save = paymentTransactionRepository.save(tx);
-			// Sync enroll table with total paid amount
 
 			PaymentRequest paymentRequest = convertTransactionToPaymentRequest(tx, studentName, studentEmail);
 
@@ -375,12 +363,14 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		paymentTransaction.setCourseFee(paymentTransactionRequest.getCourseFee());
 		paymentTransaction.setNumSelectedInstallments(paymentTransactionRequest.getNumSelectedInstallments());
 		paymentTransaction.setRequestDate(LocalDate.now());
+		
 
 		PaymentTransaction savedTransaction = paymentTransactionRepository.save(paymentTransaction);
 
 		webhookSenderService.sendInstallmentRequestDetails(savedTransaction);
 
 		PaymentTransactionResponse response = createResponseForPaymentRequest(savedTransaction);
+
 		return response;
 	}
 
@@ -393,11 +383,14 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 		response.setMobile(savedTransaction.getMobile());
 		response.setCourseName(savedTransaction.getCourseName());
 		response.setBatchId(savedTransaction.getBatchId());
+		response.setStudentName(savedTransaction.getStudentName());
+		response.setMobile(savedTransaction.getMobile());
 		response.setCourseFee(savedTransaction.getCourseFee());
 		response.setNumSelectedInstallments(savedTransaction.getNumSelectedInstallments());
 		response.setRequestDate(savedTransaction.getRequestDate());
 		response.setRequestStatus(savedTransaction.getRequestStatus());
 		response.setPaymentMethod(savedTransaction.getPaymentMethod());
+		response.setCouponCode(savedTransaction.getCouponCode());
 		return response;
 	}
 
@@ -412,6 +405,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			response.setStudentId(tx.getStudentId());
 			response.setStudentName(tx.getStudentName());
 			response.setPayerEmail(tx.getPayerEmail());
+			response.setStudentName(tx.getStudentName());
 			response.setMobile(tx.getMobile());
 			response.setCourseName(tx.getCourseName());
 			response.setBatchId(tx.getBatchId());
@@ -419,6 +413,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			response.setCourseFee(tx.getCourseFee());
 			response.setRequestDate(tx.getRequestDate());
 			response.setRequestStatus(tx.getRequestStatus());
+			response.setCouponCode(tx.getCouponCode());
 			return response;
 		}).collect(Collectors.toList());
 	}
@@ -469,6 +464,7 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			res.setStudentId(tx.getStudentId());
 			res.setStudentName(tx.getStudentName());
 			res.setEmail(tx.getPayerEmail());
+			res.setStudentName(tx.getStudentName());
 			res.setMobile(tx.getMobile());
 			res.setCourseName(tx.getCourseName());
 			res.setCourseFee(tx.getCourseFee());
@@ -479,9 +475,11 @@ public class RazorpayServiceImpl implements RazorpayServiceInterface {
 			res.setStatus(tx.getStatus());
 			res.setPaymentMethod(tx.getPaymentMethod());
 			res.setCreatedDate(tx.getRequestDate());
+			res.setCoupon(tx.getCouponCode());
 			return res;
 		}).collect(Collectors.toList());
 	}
+
 	@Override
 	public List<PaymentRequest> getDashboardOrders(String email) {
 		List<Object[]> results = paymentTransactionRepository.findDashboardRows(email);

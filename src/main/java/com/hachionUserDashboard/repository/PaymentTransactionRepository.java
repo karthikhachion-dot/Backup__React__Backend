@@ -19,9 +19,9 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 			@Param("batchId") String batchId);
 
 	@Query(value = "SELECT * FROM payment_transactions pt " + "WHERE pt.student_id = :studentId "
-			+ "AND pt.course_name = :courseName " + "LIMIT 1", nativeQuery = true)
+			+ "AND pt.course_name = :courseName " + "AND pt.batch_id = :batchId " + "LIMIT 1", nativeQuery = true)
 	Optional<PaymentTransaction> findByStudentIdAndCourseName(@Param("studentId") String studentId,
-			@Param("courseName") String courseName);
+			@Param("courseName") String courseName, @Param("batchId") String batchId);
 
 	@Query(value = "SELECT t.checkbox_clicked " + "FROM payment_transactions t " + "WHERE t.student_id = :studentId "
 			+ "AND t.course_name = :courseName " + "AND t.batch_id = :batchId", nativeQuery = true)

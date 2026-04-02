@@ -5,12 +5,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +32,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hachionUserDashboard.entity.UserReview;
 import com.hachionUserDashboard.repository.UserReviewRepository;
+
+import jakarta.transaction.Transactional;
 
 @RequestMapping
 
@@ -224,5 +228,20 @@ public class UserReviewController {
 	public List<UserReview> getApprovedReviewsByCourse(@RequestParam String courseName) {
 
 		return repo.findVisibleApprovedReviewsByCourse(courseName);
+	}
+	@DeleteMapping("/userreview/delete")
+	@Transactional
+	public ResponseEntity<?> deleteReview(@RequestParam String name, @RequestParam String email,
+			@RequestParam String courseName,
+			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+
+		int deletedRows = repo.deleteReview(name, email, courseName, date);
+
+		if (deletedRows > 0) {
+			return ResponseEntity.ok("Review deleted successfully.");
+		} else {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body("Review not deleted. It may be approved/rejected or not found.");
+		}
 	}
 }

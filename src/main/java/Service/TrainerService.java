@@ -2,10 +2,12 @@ package Service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hachionUserDashboard.dto.TrainerRequest;
+import com.hachionUserDashboard.dto.TrainerSummaryDTO;
 import com.hachionUserDashboard.entity.Trainer;
 
 public interface TrainerService {
@@ -18,7 +20,9 @@ public interface TrainerService {
 	Trainer updateTrainer(int trainerId, Trainer updatedTrainer, MultipartFile trainerImage) throws IOException;
 
 	void deleteTrainer(int trainerId);
-	
+
 	public List<Trainer> getTrainersByCourseName(String courseName);
+
+	public List<Map<String, Object>> getTrainerSummaries();
 
 }

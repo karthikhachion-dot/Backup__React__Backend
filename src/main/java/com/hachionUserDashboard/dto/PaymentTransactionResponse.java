@@ -63,6 +63,8 @@ public class PaymentTransactionResponse {
 	private String mobile;
 	private LocalDate requestDate;
 
+	private String couponCode;
+
 	@OneToMany(mappedBy = "paymentTransaction", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<OnlinePaymentInstallments> onlinePaymentInstallments = new ArrayList<>();
 
@@ -264,6 +266,14 @@ public class PaymentTransactionResponse {
 
 	public void setRequestDate(LocalDate requestDate) {
 		this.requestDate = requestDate;
+	}
+
+	public String getCouponCode() {
+		return couponCode;
+	}
+
+	public void setCouponCode(String couponCode) {
+		this.couponCode = couponCode;
 	}
 
 }
