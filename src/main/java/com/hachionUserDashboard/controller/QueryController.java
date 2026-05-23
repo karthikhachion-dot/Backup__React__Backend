@@ -101,7 +101,7 @@ public class QueryController {
 
 				"Our Business Team will call you shortly or responded in the details provided by you" + "\n" +
 
-				"If you have any questions, please contact our support team at trainings.hachion@gmail.com or call us at 17324852499. We look forward to seeing you there!"
+				"If you have any questions, please contact our support team at trainings@hachion.co or call us at 17324852499. We look forward to seeing you there!"
 				+ "\n" + "Best regards," + "\n" + "Hachion Business Team " + "\n"
 				+ "Whatsapp: https://wa.me/17324852499");
 

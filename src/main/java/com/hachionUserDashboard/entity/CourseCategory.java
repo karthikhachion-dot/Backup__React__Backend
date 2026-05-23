@@ -12,42 +12,43 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @Entity
 public class CourseCategory {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    private String name;
-    
-    private LocalDate date;
+	@Column(nullable = false)
+	private String name;
 
-    @OneToMany(mappedBy = "courseCategory", cascade = CascadeType.ALL)
-    @JsonBackReference  
-    private List<Course> courses;
+	private LocalDate date;
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+	@OneToMany(mappedBy = "courseCategory", cascade = CascadeType.ALL)
+	@JsonBackReference
+	private List<Course> courses;
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+	// Getters and Setters
+	public Long getId() {
+		return id;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public void setId(Long id) {
+		this.id = id;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public List<Course> getCourses() {
-        return courses;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public void setCourses(List<Course> courses) {
-        this.courses = courses;
-    }
+	public List<Course> getCourses() {
+		return courses;
+	}
+
+	public void setCourses(List<Course> courses) {
+		this.courses = courses;
+	}
 
 	public LocalDate getDate() {
 		return date;

@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hachionUserDashboard.entity.CourseSchedule;
 import com.hachionUserDashboard.repository.CourseRepository;
 import com.hachionUserDashboard.repository.CourseScheduleRepository;
+import com.hachionUserDashboard.service.CourseScheduleService;
 
 import Service.Schedule;
 
@@ -45,6 +46,9 @@ public class ScheduleController {
 
 	@Autowired
 	private CourseRepository courseRepository;
+
+	@Autowired
+	private CourseScheduleService service;
 
 	public ScheduleController(Schedule userService) {
 		this.setScheduleservice(userService);
@@ -91,16 +95,9 @@ public class ScheduleController {
 				schedule.setSchedule_week(weekDay);
 
 			} catch (DateTimeParseException e) {
-			
-			    System.out.println("❌ Failed to parse schedule datetime:");
-			    System.out.println("   ➤ Schedule ID      : " + schedule.getCourse_schedule_id());
-			    System.out.println("   ➤ course name : " + schedule.getSchedule_course_name());
-			    System.out.println("   ➤ category name : " + schedule.getSchedule_category_name());
-			    System.out.println("   ➤ Schedule Date    : " + schedule.getSchedule_date());
-			    System.out.println("   ➤ Schedule Time    : " + schedule.getSchedule_time());
-			    System.out.println("   ➤ Error Message    : " + e.getMessage());
+
 			}
-			
+
 		}
 
 		coursescheduleList.sort(Comparator.comparing(scheduleToDateTimeMap::get));
@@ -165,6 +162,9 @@ public class ScheduleController {
 			courseschedule.setSchedule_date(updatedCourseSchedule.getSchedule_date());
 			courseschedule.setMeeting_link(updatedCourseSchedule.getMeeting_link());
 			courseschedule.setTrainer_name(updatedCourseSchedule.getTrainer_name());
+			courseschedule.setCoordinator(updatedCourseSchedule.getCoordinator());
+			courseschedule.setRecordingsFolderId(updatedCourseSchedule.getRecordingsFolderId());
+			courseschedule.setScheduleFrequency(updatedCourseSchedule.getScheduleFrequency());
 
 			repo.save(courseschedule);
 
@@ -243,5 +243,13 @@ public class ScheduleController {
 //				numberOfClassesStr);
 //		return ResponseEntity.ok(response);
 //	}
+	@GetMapping("/batch-ids")
+	public ResponseEntity<?> getBatchIds(@RequestParam String categoryName, @RequestParam String courseName,
+			@RequestParam String duration) {
+
+		List<String> batchIds = service.getBatchIds(categoryName, courseName, duration);
+
+		return ResponseEntity.ok(batchIds);
+	}
 
 }

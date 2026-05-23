@@ -88,7 +88,7 @@ public class TalkToOurAdvisorServiceImpl implements TalkToOurAdvisorServiceInter
 		String emailContent = "Hi, " + formRequest.getFullName() + "\n\n" + "Welcome to Hachion\n"
 				+ "We have received your query.\n"
 				+ "Our Advisor will call you shortly or respond using the details provided by you.\n\n"
-				+ "If you have any questions, please contact our support team at trainings.hachion@gmail.com or call us at 17324852499.\n"
+				+ "If you have any questions, please contact our support team at trainings@hachion.co or call us at 17324852499.\n"
 				+ "We look forward to seeing you there!\n\n" + "Best regards,\n" + "Hachion Business Team\n";
 
 		helper.setText(emailContent);

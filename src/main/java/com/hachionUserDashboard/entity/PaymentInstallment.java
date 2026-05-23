@@ -25,22 +25,22 @@ public class PaymentInstallment {
 	@JoinColumn(name = "payment_id")
 	private Payment payment;
 
-	@Column(name = "no_of_installments")
+	@Column(name = "no_of_installments", nullable = false)
 	private Integer numberOfInstallments;
 
-	@Column(name = "pay_date")
+	@Column(name = "pay_date", nullable = false)
 	private LocalDate payDate;
 
-	@Column(name = "due_date")
+	@Column(name = "due_date",nullable = false)
 	private LocalDate dueDate;
 
-	@Column(name = "payment_method")
+	@Column(name = "payment_method", nullable = false)
 	private String paymentMethod;
 
-	@Column(name = "actual_pay")
+	@Column(name = "actual_pay", nullable = false)
 	private Double actualPay;
 
-	@Column(name = "received_pay")
+	@Column(name = "received_pay", nullable = false)
 	private Double receivedPay;
 
 	@Column(name = "proof")

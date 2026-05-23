@@ -6,6 +6,10 @@ public class AskQueryWebhookRequest {
 	private String phone;
 	private String comments;
 	private String location;
+	private String timeZone;
+	private String country;
+	private String whatsapp;
+	
 
 	public String getEmail() {
 		return email;
@@ -38,4 +42,29 @@ public class AskQueryWebhookRequest {
 	public void setLocation(String location) {
 		this.location = location;
 	}
+
+	public String getTimeZone() {
+		return timeZone;
+	}
+
+	public void setTimeZone(String timeZone) {
+		this.timeZone = timeZone;
+	}
+
+	public String getCountry() {
+		return country;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
+	}
+
+	public String getWhatsapp() {
+		return whatsapp;
+	}
+
+	public void setWhatsapp(String whatsapp) {
+		this.whatsapp = whatsapp;
+	}
+	
 }

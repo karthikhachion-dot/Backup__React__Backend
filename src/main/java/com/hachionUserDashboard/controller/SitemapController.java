@@ -38,7 +38,7 @@ public class SitemapController {
 				continue;
 
 			String slug = generateSlug(course.getCourseName());
-			xml.append(buildUrl("https://www.hachion.co/coursedetails/" + slug, "daily", "0.9"));
+			xml.append(buildUrl("https://www.hachion.co/courses/" + slug, "daily", "0.9"));
 		}
 		for (Object[] row : blogs) {
 

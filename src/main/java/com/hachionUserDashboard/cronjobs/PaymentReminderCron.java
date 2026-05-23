@@ -1,4 +1,4 @@
-package com.hachionUserDashboard.config;
+package com.hachionUserDashboard.cronjobs;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;

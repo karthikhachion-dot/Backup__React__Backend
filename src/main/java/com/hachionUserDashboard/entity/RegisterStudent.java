@@ -34,6 +34,9 @@ public class RegisterStudent {
 	private String email;
 
 	@Column(nullable = true)
+	private String course_name;
+
+	@Column(nullable = true)
 	private String mobile;
 
 	@Column(nullable = true)
@@ -41,8 +44,7 @@ public class RegisterStudent {
 
 	@Column(nullable = true)
 	private String password;
-
-	// Offline-specific fields
+	
 	@Column(nullable = true)
 	private String country;
 
@@ -77,10 +79,6 @@ public class RegisterStudent {
 	private Integer additional_phone;
 
 	@Column(nullable = true)
-	private String course_name;
-
-	// Online-specific fields
-	@Column(nullable = true)
 	private String firstName;
 
 	@Column(nullable = true)
@@ -98,7 +96,8 @@ public class RegisterStudent {
 	@Column(name = "otp_generated_time", nullable = true)
 	private LocalDateTime otpGeneratedTime;
 
-	private String status;
+	@Column(name = "status", nullable = true)
+	private String status = "ACTIVE";
 
 	@Column
 	private String mode;
@@ -139,17 +138,26 @@ public class RegisterStudent {
 	@Column(name = "seo_team")
 	private String seoTeam;
 
-//	@Column(name = "technology")
-//	private String technology;
-
 	@Column(name = "state_city")
 	private String stateCity;
 
 	@Column(name = "coordinator")
 	private String coordinator;
-	
+
 	@Column(name = "lead_status")
 	private String leadStatus;
+
+	@Column(name = "lead_tag")
+	private String leadTag;
+	
+	@Column(name = "last_email_sent_at")
+	private LocalDateTime lastEmailSentAt;
+	
+	@Column(name = "email_sent_count")
+	private Integer emailSentCount = 0;
+	
+	@Column(name = "email_received_count")
+	private Integer emailReceivedCount = 0;
 
 	@JsonIgnore
 	@OneToMany(mappedBy = "student", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -571,4 +579,37 @@ public class RegisterStudent {
 		this.leadStatus = leadStatus;
 	}
 
+	public String getLeadTag() {
+		return leadTag;
+	}
+
+	public void setLeadTag(String leadTag) {
+		this.leadTag = leadTag;
+	}
+
+	public Integer getEmailSentCount() {
+		return emailSentCount;
+	}
+
+	public void setEmailSentCount(Integer emailSentCount) {
+		this.emailSentCount = emailSentCount;
+	}
+
+	public Integer getEmailReceivedCount() {
+		return emailReceivedCount;
+	}
+
+	public void setEmailReceivedCount(Integer emailReceivedCount) {
+		this.emailReceivedCount = emailReceivedCount;
+	}
+
+	public LocalDateTime getLastEmailSentAt() {
+		return lastEmailSentAt;
+	}
+
+	public void setLastEmailSentAt(LocalDateTime lastEmailSentAt) {
+		this.lastEmailSentAt = lastEmailSentAt;
+	}
+	
+	
 }

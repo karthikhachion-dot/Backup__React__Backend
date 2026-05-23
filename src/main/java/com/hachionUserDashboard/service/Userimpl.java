@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -40,7 +41,6 @@ import Response.LoginResponse;
 import Response.UserProfileResponse;
 import Service.UserService;
 import jakarta.mail.MessagingException;
-import java.nio.file.StandardCopyOption;
 
 @Service
 public class Userimpl implements UserService {
@@ -77,7 +77,7 @@ public class Userimpl implements UserService {
 		user = new RegisterStudent();
 		user.setEmail(email);
 		user.setOTP(otp);
-		user.setOTPStatus(false);
+		user.setOTPStatus(true);
 
 		userRepository.save(user);
 		emailUtil.sendOtpEmail(email, otp);
@@ -125,7 +125,8 @@ public class Userimpl implements UserService {
 		user.setStudentId(generateNextStudentId());
 		user.setMode(registrationRequest.getMode());
 		user.setDate(LocalDate.now());
-
+		user.setStatus("ACTIVE");
+		
 		emailService.sendEmailForRegisterOnlineStudent(registrationRequest.getEmail(),
 				registrationRequest.getFirstName());
 
@@ -183,6 +184,7 @@ public class Userimpl implements UserService {
 		user.setMobile(userDTO.getMobile());
 		user.setOTP(userDTO.getOTP());
 		user.setOtpGeneratedTime(LocalDateTime.now());
+		user.setStatus("ACTIVE");
 
 		userRepository.save(user);
 		return user.getUserName();
@@ -199,8 +201,10 @@ public class Userimpl implements UserService {
 		newUser.setOTPStatus(true);
 		newUser.setStudentId(generateNextStudentId());
 		newUser.setMode("Online");
-		newUser.setStatus("signup");
+		newUser.setStatus("ACTIVE");
+		newUser.setDate(LocalDate.now());
 		newUser.setProfileImage(profileImage);
+		
 		return userRepository.save(newUser);
 	}
 
@@ -244,6 +248,8 @@ public class Userimpl implements UserService {
 				Optional<RegisterStudent> user = userRepository.findOneByEmailAndPassword(loginRequest.getEmail(),
 						encodedPassword);
 				if (user.isPresent()) {
+					 user1.setStatus("ACTIVE");
+					    userRepository.save(user1);
 					return new LoginResponse("Login success", true, name, email, studentId);
 				} else {
 					return new LoginResponse("Login Failed", false, name, email, studentId);
@@ -467,144 +473,6 @@ public class Userimpl implements UserService {
 		}
 	}
 
-//	public void resetPassword(UserRegistrationRequest request) {
-//		Optional<RegisterStudent> optionalUser = userRepository.findByEmailForProfile(request.getEmail());
-//
-//		if (optionalUser.isPresent()) {
-//			RegisterStudent user = optionalUser.get();
-//
-//			if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-//				System.out.println("Old password is incorrect");
-//				return;
-//			}
-//
-//			if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-//				System.out.println("New password and confirm password do not match");
-//				return;
-//			}
-//
-//			if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-//				System.out.println("New password must be different from the old password");
-//				return;
-//			}
-//
-//			String encodedPassword = passwordEncoder.encode(request.getNewPassword());
-//			user.setPassword(encodedPassword);
-//			userRepository.save(user);
-//			System.out.println("Password updated successfully");
-//
-//		} else {
-//			System.out.println("User not found with email: " + request.getEmail());
-//		}
-//	}
-
-//	@Transactional
-//	public void resetPassword(UserRegistrationRequest request, MultipartFile profileImage) {
-//		Optional<RegisterStudent> optionalUser = userRepository.findByEmailForProfile(request.getEmail());
-//
-//		if (optionalUser.isPresent()) {
-//			RegisterStudent user = optionalUser.get();
-//
-//			if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-//				if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-//					System.out.println("Request Password: " + request.getPassword());
-//					System.out.println("User Encoded Password: " + user.getPassword());
-//					System.out.println("Password Match: " + passwordEncoder.matches(request.getPassword(), user.getPassword()));
-//					String encoded = passwordEncoder.encode("Hach@123");
-//					System.out.println("Encoded: " + encoded);
-//					return;
-//				}
-//
-//				if (request.getNewPassword() == null || request.getNewPassword().isEmpty()
-//						|| request.getConfirmPassword() == null || request.getConfirmPassword().isEmpty()) {
-//					System.out.println("New password and confirm password are required when changing password");
-//					return;
-//				}
-//
-//				if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-//					System.out.println("New password and confirm password do not match");
-//					return;
-//				}
-//
-//				if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
-//					System.out.println("New password must be different from the old password");
-//					return;
-//				}
-//
-//				String encodedPassword = passwordEncoder.encode(request.getNewPassword());
-//				user.setPassword(encodedPassword);
-//				System.out.println("Password updated successfully");
-//			}
-//
-//			if (request.getUserName() != null && !request.getUserName().isEmpty()) {
-//				user.setUserName(request.getUserName());
-//			}
-//			if (request.getMobile() != null && !request.getMobile().isEmpty()) {
-//				user.setMobile(request.getMobile());
-//			}
-//
-//			if (profileImage != null && !profileImage.isEmpty()) {
-//			    try {
-//			        String originalFilename = profileImage.getOriginalFilename();
-//			        String studentId = user.getStudentId();
-//
-//			        // Optional sanitization
-//			        String sanitizedFilename = originalFilename.replaceAll("[^a-zA-Z0-9\\.\\-]", "_");
-//			        String newFileName = studentId + "_" + sanitizedFilename;
-//
-//			        // Delete old image if it exists
-//			        String oldFileName = user.getProfileImage();
-//			        if (oldFileName != null && !oldFileName.isEmpty()) {
-//			            Path oldFilePath = Paths.get(uploadDir, oldFileName);
-//			            Files.deleteIfExists(oldFilePath);
-//			        }
-//
-//			        // Save new image
-//			        Path newFilePath = Paths.get(uploadDir, newFileName);
-//			        Files.createDirectories(newFilePath.getParent());
-//			        Files.write(newFilePath, profileImage.getBytes());
-//
-//			        user.setProfileImage(newFileName);
-//
-//			    } catch (IOException e) {
-//			        System.out.println("Failed to save profile image: " + e.getMessage());
-//			    }
-//			}
-//
-//
-//			userRepository.save(user);
-//		} else {
-//			System.out.println("User not found with email: " + request.getEmail());
-//		}
-//	}
-
-//	@Transactional
-//	public void resetPassword(UserRegistrationRequest request, MultipartFile profileImage) {
-//		Optional<RegisterStudent> optionalUser = userRepository.findByEmailForProfile(request.getEmail());
-//
-//		if (optionalUser.isPresent()) {
-//			RegisterStudent user = optionalUser.get();
-//
-//			if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-//				System.out.println("Password provided: " + request.getPassword()); // debug
-//				String encodedPassword = passwordEncoder.encode(request.getPassword());
-//				user.setPassword(encodedPassword);
-//				System.out.println("Password updated successfully in DB: " + encodedPassword);
-//			}
-//
-//			if (request.getUserName() != null && !request.getUserName().isEmpty()) {
-//				user.setUserName(request.getUserName());
-//			}
-//			if (request.getMobile() != null && !request.getMobile().isEmpty()) {
-//				user.setMobile(request.getMobile());
-//			}
-//
-//			// profile image logic...
-//			userRepository.save(user);
-//		} else {
-//			System.out.println("User not found with email: " + request.getEmail());
-//		}
-//	}
 	@Transactional
 	public void resetPassword(UserRegistrationRequest request, MultipartFile profileImage) {
 		Optional<RegisterStudent> optionalUser = userRepository.findByEmailForProfile(request.getEmail());

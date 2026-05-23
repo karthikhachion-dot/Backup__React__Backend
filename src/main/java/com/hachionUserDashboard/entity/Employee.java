@@ -13,7 +13,6 @@ public class Employee {
 
 	private String name;
 
-	
 	@Column(name = "company_mage")
 	private String companyImage;
 
@@ -30,6 +29,12 @@ public class Employee {
 	@Column(name = "additional_info", columnDefinition = "TEXT")
 	private String additionalInfo;
 
+	@Column(name = "recordings_folder_id")
+	private String recordingsFolderId;
+
+	@Column(name = "google_form_url")
+	private String googleFormUrl;
+
 	public Employee() {
 	}
 
@@ -44,8 +49,6 @@ public class Employee {
 	public String getName() {
 		return name;
 	}
-
-
 
 	public String getCompanyImage() {
 		return companyImage;
@@ -106,4 +109,21 @@ public class Employee {
 	public void setAdditionalInfo(String additionalInfo) {
 		this.additionalInfo = additionalInfo;
 	}
+
+	public String getRecordingsFolderId() {
+		return recordingsFolderId;
+	}
+
+	public void setRecordingsFolderId(String recordingsFolderId) {
+		this.recordingsFolderId = recordingsFolderId;
+	}
+
+	public String getGoogleFormUrl() {
+		return googleFormUrl;
+	}
+
+	public void setGoogleFormUrl(String googleFormUrl) {
+		this.googleFormUrl = googleFormUrl;
+	}
+
 }

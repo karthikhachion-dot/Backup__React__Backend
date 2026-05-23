@@ -11,6 +11,10 @@ public class ImportResponse {
 	private List<String> excelDuplicateEmails;
 	
 	private List<String> invalidNumbers;
+	
+	private int updatedRecords;
+	private List<String> updatedEmails;
+	private List<String> skippedDuplicates;
 
 	public int getTotalRecords() {
 		return totalRecords;
@@ -58,6 +62,30 @@ public class ImportResponse {
 
 	public void setInvalidNumbers(List<String> invalidNumbers) {
 		this.invalidNumbers = invalidNumbers;
+	}
+
+	public int getUpdatedRecords() {
+		return updatedRecords;
+	}
+
+	public void setUpdatedRecords(int updatedRecords) {
+		this.updatedRecords = updatedRecords;
+	}
+
+	public List<String> getUpdatedEmails() {
+		return updatedEmails;
+	}
+
+	public void setUpdatedEmails(List<String> updatedEmails) {
+		this.updatedEmails = updatedEmails;
+	}
+
+	public List<String> getSkippedDuplicates() {
+		return skippedDuplicates;
+	}
+
+	public void setSkippedDuplicates(List<String> skippedDuplicates) {
+		this.skippedDuplicates = skippedDuplicates;
 	}
 
 }

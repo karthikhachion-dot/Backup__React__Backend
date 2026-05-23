@@ -21,6 +21,9 @@ public class TrainerRequest {
 	private Double trainerUserRating;
 	@Lob
 	private String trainerImage;
+	private Integer experience;
+	private String designation;
+	private String experienceCredentials;
 
 	public int getTrainer_id() {
 		return trainer_id;
@@ -118,6 +121,30 @@ public class TrainerRequest {
 		this.trainerImage = trainerImage;
 	}
 
+	public Integer getExperience() {
+		return experience;
+	}
+
+	public void setExperience(Integer experience) {
+		this.experience = experience;
+	}
+
+	public String getDesignation() {
+		return designation;
+	}
+
+	public void setDesignation(String designation) {
+		this.designation = designation;
+	}
+
+	public String getExperienceCredentials() {
+		return experienceCredentials;
+	}
+
+	public void setExperienceCredentials(String experienceCredentials) {
+		this.experienceCredentials = experienceCredentials;
+	}
+
 	public static TrainerRequest from(Trainer t) {
 		TrainerRequest d = new TrainerRequest();
 		d.setTrainer_id(t.getTrainer_id());
@@ -131,6 +158,9 @@ public class TrainerRequest {
 		d.setTrainerRating(t.getTrainerRating());
 		d.setDate(t.getDate());
 		d.setTrainerImage(t.getTrainerImage());
+		d.setExperience(t.getExperience());
+		d.setDesignation(t.getDesignation());
+		d.setExperienceCredentials(t.getExperienceCredentials());
 		return d;
 	}
 

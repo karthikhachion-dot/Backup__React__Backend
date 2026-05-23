@@ -4,7 +4,6 @@ package com.hachionUserDashboard.service;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -72,7 +71,7 @@ public class BitlyScheduler {
 	                + "Referrence: " + topRef + "\n"
 	                + "Countries: " + countryDetails.toString();
 
-	        webhookSenderService.sendMessage(message);
+//	        webhookSenderService.sendMessage(message);
 
 	        clickCache.update(link, current);
 	    }

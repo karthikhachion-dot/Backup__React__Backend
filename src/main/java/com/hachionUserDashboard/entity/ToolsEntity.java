@@ -21,13 +21,13 @@ public class ToolsEntity {
 	@Column(name = "curr_id")
 	private Long currId;
 
-	@Column(name = "category_name")
+	@Column(name = "category_name",nullable = false)
 	private String categoryName;
 
-	@Column(name = "course_name")
+	@Column(name = "course_name",nullable = false)
 	private String courseName;
 
-	@Column(name = "created_date")
+	@Column(name = "created_date", nullable = false)
 	private LocalDate createdDate;
 
 	@OneToMany(mappedBy = "tools", cascade = CascadeType.ALL, orphanRemoval = true)

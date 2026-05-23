@@ -22,6 +22,7 @@ public class CourseCategoryController {
 		if (categoryService.categoryExists(category.getName())) {
 			return ResponseEntity.status(400).body("Course Category already exists");
 		}
+		
 		categoryService.saveCategory(category);
 		return ResponseEntity.ok("Course Category added successfully");
 	}
@@ -31,20 +32,32 @@ public class CourseCategoryController {
 		return categoryService.getAllCategories();
 	}
 
-	@PutMapping("/update/{id}")
-	public ResponseEntity<String> updateCategory(@PathVariable Long id, @RequestBody CourseCategory category) {
-		Optional<CourseCategory> existingCategory = categoryService.getCategoryById(id);
-		if (existingCategory.isPresent()) {
-			CourseCategory updatedCategory = existingCategory.get();
-			updatedCategory.setName(category.getName());
-			updatedCategory.setDate(category.getDate());
-			categoryService.saveCategory(updatedCategory);
-			return ResponseEntity.ok("Course Category updated successfully");
-		} else {
-			return ResponseEntity.status(404).body("Course Category not found");
-		}
-	}
+//	@PutMapping("/update/{id}")
+//	public ResponseEntity<String> updateCategory(@PathVariable Long id, @RequestBody CourseCategory category) {
+//		Optional<CourseCategory> existingCategory = categoryService.getCategoryById(id);
+//		if (existingCategory.isPresent()) {
+//			CourseCategory updatedCategory = existingCategory.get();
+//			updatedCategory.setName(category.getName());
+//			updatedCategory.setDate(category.getDate());
+//			categoryService.saveCategory(updatedCategory);
+//			return ResponseEntity.ok("Course Category updated successfully");
+//		} else {
+//			return ResponseEntity.status(404).body("Course Category not found");
+//		}
+//	}
 
+	@PutMapping("/update/{id}")
+	public ResponseEntity<String> updateCategory(@PathVariable Long id,
+	                                             @RequestBody CourseCategory category) {
+
+	    CourseCategory updatedCategory = categoryService.updateCategory(id, category);
+
+	    if (updatedCategory != null) {
+	        return ResponseEntity.ok("Course Category updated successfully");
+	    } else {
+	        return ResponseEntity.status(404).body("Course Category not found");
+	    }
+	}
 	@DeleteMapping("/delete/{id}")
 	public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
 		if (categoryService.categoryExistsById(id)) {

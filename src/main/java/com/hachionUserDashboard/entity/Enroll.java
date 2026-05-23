@@ -20,26 +20,27 @@ public class Enroll {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 
-	@Column
+	@Column(nullable = false)
 	private String name;
 
-	@Column(name = "student_id")
+	@Column(name = "student_id",nullable = false)
 	private String studentId;
 
-	@Column(name = "batch_id")
+	@Column(name = "batch_id",nullable = false)
 	private String batchId;
 
-	@Column
+	@Column(nullable = false)
 	private String email;
 
-	@Column
+	@Column(nullable = false)
 	private String mobile;
 
-	@Column
+	@Column(nullable = false)
 	private String course_name;
 
-	@Column
+	@Column(nullable = false)
 	private String enroll_date;
+	
 	@Column
 	private String week;
 
@@ -49,7 +50,7 @@ public class Enroll {
 	@Column
 	private Double amount = 0.0;
 
-	@Column
+	@Column(nullable = false)
 	private String mode;
 
 	@Column
@@ -74,6 +75,20 @@ public class Enroll {
 
 	@Column(name = "payment_date")
 	private LocalDate paymentDate;
+	
+	@Column(name = "student_status")
+	private String studentStatus;
+	
+	@Column(name = "enrollment_status")
+	private String enrollmentStatus;
+
+	public String getEnrollmentStatus() {
+		return enrollmentStatus;
+	}
+
+	public void setEnrollmentStatus(String enrollmentStatus) {
+		this.enrollmentStatus = enrollmentStatus;
+	}
 
 	public LocalDate getDate() {
 		return date;
@@ -269,6 +284,14 @@ public class Enroll {
 
 	public void setPaymentDate(LocalDate paymentDate) {
 		this.paymentDate = paymentDate;
+	}
+
+	public String getStudentStatus() {
+		return studentStatus;
+	}
+
+	public void setStudentStatus(String studentStatus) {
+		this.studentStatus = studentStatus;
 	}
 
 }

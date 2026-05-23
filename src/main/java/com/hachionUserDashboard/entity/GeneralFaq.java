@@ -18,7 +18,7 @@ public class GeneralFaq {
 	private String faqTitle;
 
 	@Lob
-	@Column(columnDefinition = "TEXT")
+	@Column(nullable = false, columnDefinition = "TEXT")
 	private String description;
 
 	@Column(nullable = false)

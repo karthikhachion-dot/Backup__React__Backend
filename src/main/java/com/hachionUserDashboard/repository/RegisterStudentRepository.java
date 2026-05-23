@@ -59,10 +59,15 @@ public interface RegisterStudentRepository extends JpaRepository<RegisterStudent
 	@Query(value = "SELECT * FROM registerstudent WHERE student_id = :studentId", nativeQuery = true)
 	Optional<RegisterStudent> findByStudentId(@Param("studentId") String studentId);
 
+//	@Modifying
+//	@Transactional
+//	@Query(value = "DELETE FROM registerstudent WHERE email = :email", nativeQuery = true)
+//	void deleteByEmailNative(@Param("email") String email);
+
 	@Modifying
 	@Transactional
-	@Query(value = "DELETE FROM registerstudent WHERE email = :email", nativeQuery = true)
-	void deleteByEmailNative(@Param("email") String email);
+	@Query(value = "UPDATE registerstudent SET status = 'DISABLED' WHERE LOWER(email) = LOWER(:email)", nativeQuery = true)
+	void disableByEmailNative(@Param("email") String email);
 
 	@Query(value = "SELECT COUNT(*) FROM registerstudent WHERE mobile = :mobile", nativeQuery = true)
 	int countByMobile(@Param("mobile") String mobile);
@@ -86,4 +91,102 @@ public interface RegisterStudentRepository extends JpaRepository<RegisterStudent
 
 	boolean existsByStudentId(String studentId);
 
+	@Query(value = """
+			SELECT
+			    rs.id,
+			    rs.student_id,
+			    rs.email,
+			    rs.course_name,
+			    rs.mobile,
+			    rs.whatsapp,
+			    rs.user_name,
+			    rs.country,
+			    rs.state_city,
+			    rs.coordinator,
+			    rs.lead_status,
+			    rs.lead_tag,
+			    rs.date,
+
+			    sr.remark,
+			    sr.call_made_on,
+			    sr.last_call_made_on,
+			    sr.co_ordinator,
+
+			    rs.mode,
+			    rs.time_zone,
+			    rs.analyst_name,
+			    rs.source,
+			    rs.seo_team,
+			    rs.status,
+			    rs.last_email_sent_at
+
+			FROM registerstudent rs
+
+			LEFT JOIN (
+			    SELECT *,
+			           ROW_NUMBER() OVER (
+			               PARTITION BY student_id
+			               ORDER BY created_at DESC, id DESC
+			           ) AS rn
+			    FROM student_remarks_history
+			) sr
+			ON rs.student_id = sr.student_id AND sr.rn = 1
+
+			ORDER BY rs.date DESC
+			""", nativeQuery = true)
+	List<Object[]> getStudentsWithRemarks();
+
+	@Query(value = """
+			    SELECT
+			        rs.user_name AS name,
+			        rs.course_name AS course,
+			        rs.lead_tag AS leadTag,
+			        rs.lead_status AS leadStatus,
+			        srh.last_call_made_on AS lastCallMadeOn,
+			        srh.co_ordinator AS coordinator
+
+			    FROM registerstudent rs
+			    LEFT JOIN student_remarks_history srh
+			        ON srh.student_id = rs.student_id
+			        AND srh.id = (
+			            SELECT MAX(s2.id)
+			            FROM student_remarks_history s2
+			            WHERE s2.student_id = rs.student_id
+			        )
+			""", nativeQuery = true)
+	List<Object[]> getLeadDashboardData();
+
+	@Query("SELECT DISTINCT r.leadTag FROM RegisterStudent r WHERE r.leadTag IS NOT NULL AND TRIM(r.leadTag) <> ''")
+	List<String> findDistinctLeadTags();
+
+	@Query("SELECT DISTINCT r.leadStatus FROM RegisterStudent r WHERE r.leadStatus IS NOT NULL AND TRIM(r.leadStatus) <> ''")
+	List<String> findDistinctLeadStatus();
+
+	@Query(value = "SELECT status FROM registerstudent WHERE email = :email", nativeQuery = true)
+	String findStatusByEmail(@Param("email") String email);
+
+	@Query(value = """
+			SELECT user_name, status
+			FROM registerstudent
+			WHERE email = :email
+			LIMIT 1
+			""", nativeQuery = true)
+	List<Object[]> findUserNameAndStatusByEmail(@Param("email") String email);
+
+	@Query(value = """
+			SELECT DISTINCT time_zone
+			FROM registerstudent
+			WHERE time_zone IS NOT NULL
+			AND time_zone != ''
+			ORDER BY time_zone ASC
+			""", nativeQuery = true)
+	List<String> findAllTimeZones();
+
+	@Query(value = """
+			SELECT *
+			FROM registerstudent
+			WHERE email = :email
+			LIMIT 1
+			""", nativeQuery = true)
+	Optional<RegisterStudent> getStudentByEmail(@Param("email") String email);
 }

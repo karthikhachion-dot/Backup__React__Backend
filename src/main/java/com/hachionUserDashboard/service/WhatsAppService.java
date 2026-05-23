@@ -55,6 +55,9 @@ public class WhatsAppService {
 	@Value("${twilio.mentoringModeContentSid}")
 	private String mentoringModeContentSid;
 
+	@Value("${twilio.enquiryContentSid}")
+	private String enquiryContentSid;
+
 	@Autowired
 	private CourseRepository courseRepository;
 
@@ -174,36 +177,6 @@ public class WhatsAppService {
 		}
 	}
 
-//	public void sendTwoDayHeadsUpReminder(String mobile, String studentName, Double amountDue, String courseName,
-//			LocalDate dueDate) {
-//		try {
-//			Twilio.init(accountSid, authToken);
-//
-//			String toWhatsApp = "whatsapp:" + (mobile == null ? "" : mobile.trim().replaceAll("\\s+", ""));
-//			if (toWhatsApp.length() <= "whatsapp:".length())
-//				return; // no number
-//
-//			// Your template expects: {{1}} name, {{2}} amount, {{3}} course, {{4}} due date
-//			String variablesJson = new com.fasterxml.jackson.databind.ObjectMapper()
-//					.writeValueAsString(java.util.Map.of("1", safe(studentName, "Student"), "2", fmtAmount(amountDue), // e.g.
-//																														// "2500.00"
-//							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD") // e.g.
-//																												// "27-Sep-2025"
-//					));
-//
-//			com.twilio.rest.api.v2010.account.Message.creator(new com.twilio.type.PhoneNumber(toWhatsApp),
-//					new com.twilio.type.PhoneNumber(fromWhatsApp), "" // body must be empty when using Content SID
-//			).setContentSid((reminderMessageBefore2Days != null && !reminderMessageBefore2Days.isBlank())
-//					? reminderMessageBefore2Days
-//					: reminderMessageBefore2Days // optional fallback if you want
-//			).setContentVariables(variablesJson).create();
-//
-//		} catch (Exception e) {
-//			System.err.println("❌ WhatsApp D-2 reminder failed: " + e.getMessage());
-//			e.printStackTrace();
-//		}
-//	}
-
 	public void sendTwoDayHeadsUpReminder(String mobile, String studentName, Double amountDue, String courseName,
 			LocalDate dueDate) {
 		try {
@@ -211,7 +184,7 @@ public class WhatsAppService {
 
 			String toWhatsApp = "whatsapp:" + (mobile == null ? "" : mobile.trim().replaceAll("\\s+", ""));
 			if (toWhatsApp.length() <= "whatsapp:".length())
-				return; // no number
+				return;
 
 			if (reminderMessageBefore2Days == null || reminderMessageBefore2Days.isBlank()) {
 				System.err
@@ -224,8 +197,7 @@ public class WhatsAppService {
 							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD")));
 
 			com.twilio.rest.api.v2010.account.Message.creator(new com.twilio.type.PhoneNumber(toWhatsApp),
-					new com.twilio.type.PhoneNumber(fromWhatsApp), "" // body must be empty when using Content SID
-			).setContentSid(reminderMessageBefore2Days) // <-- only this SID
+					new com.twilio.type.PhoneNumber(fromWhatsApp), "").setContentSid(reminderMessageBefore2Days)
 					.setContentVariables(variablesJson).create();
 
 		} catch (Exception e) {
@@ -268,32 +240,20 @@ public class WhatsAppService {
 
 			String toWhatsApp = "whatsapp:" + (mobile == null ? "" : mobile.trim().replaceAll("\\s+", ""));
 			if (toWhatsApp.length() <= "whatsapp:".length())
-				return; // no number
+				return; 
 
 			if (paymentDueToday == null || paymentDueToday.isBlank()) {
 				System.err.println("❌ Missing SID: set twilio.paymentDueToday in application.properties");
 				return;
 			}
 
-			// Template variables: {{1}} name, {{2}} amount, {{3}} course, {{4}} date
 			String variablesJson = new com.fasterxml.jackson.databind.ObjectMapper()
-					.writeValueAsString(java.util.Map.of("1", safe(studentName, "Student"), "2", fmtAmount(amountDue), // e.g.,
-																														// 2500.00
-																														// (add
-																														// currency
-																														// symbol
-																														// in
-																														// template
-																														// if
-																														// you
-																														// want)
-							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD") // e.g.,
-																												// 25-Sep-2025
-					));
+					.writeValueAsString(java.util.Map.of("1", safe(studentName, "Student"), "2", fmtAmount(amountDue),
+							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD")));
 
 			com.twilio.rest.api.v2010.account.Message.creator(new com.twilio.type.PhoneNumber(toWhatsApp),
-					new com.twilio.type.PhoneNumber(fromWhatsApp), "" // body empty when using Content SID
-			).setContentSid(paymentDueToday).setContentVariables(variablesJson).create();
+					new com.twilio.type.PhoneNumber(fromWhatsApp), "").setContentSid(paymentDueToday)
+					.setContentVariables(variablesJson).create();
 
 		} catch (Exception e) {
 			System.err.println("❌ WhatsApp D-0 reminder failed: " + e.getMessage());
@@ -301,30 +261,26 @@ public class WhatsAppService {
 		}
 	}
 
-	public void sendPaymentOverdue2DaysReminder(String mobile, String studentName, Double amountDue, // Balance Amount
-			String courseName, LocalDate dueDate) {
+	public void sendPaymentOverdue2DaysReminder(String mobile, String studentName, Double amountDue, String courseName,
+			LocalDate dueDate) {
 		try {
 			Twilio.init(accountSid, authToken);
 
 			String toWhatsApp = "whatsapp:" + (mobile == null ? "" : mobile.trim().replaceAll("\\s+", ""));
 			if (toWhatsApp.length() <= "whatsapp:".length())
-				return; // no number
+				return;
 
 			if (paymentOverdue2Days == null || paymentOverdue2Days.isBlank()) {
 				System.err.println("❌ Missing SID: set twilio.paymentOverdue2Days in application.properties");
 				return;
 			}
 
-			// Template vars: {{1}} name, {{2}} amount, {{3}} course, {{4}} due date
 			String variablesJson = new com.fasterxml.jackson.databind.ObjectMapper()
-					.writeValueAsString(java.util.Map.of("1", safe(studentName, "Student"), "2", fmtAmount(amountDue), // e.g.,
-																														// 2500.00
-							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD") // e.g.,
-																												// 23-Sep-2025
-					));
+					.writeValueAsString(java.util.Map.of("1", safe(studentName, "Student"), "2", fmtAmount(amountDue),
+							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD")));
 
 			com.twilio.rest.api.v2010.account.Message.creator(new com.twilio.type.PhoneNumber(toWhatsApp),
-					new com.twilio.type.PhoneNumber(fromWhatsApp), "" // body empty when using Content SID
+					new com.twilio.type.PhoneNumber(fromWhatsApp), "" 
 			).setContentSid(paymentOverdue2Days).setContentVariables(variablesJson).create();
 
 		} catch (Exception e) {
@@ -333,27 +289,27 @@ public class WhatsAppService {
 		}
 	}
 
-	public void sendPaymentOverdue7DaysReminder(String mobile, String studentName, Double amountDue, // Balance Amount
+	public void sendPaymentOverdue7DaysReminder(String mobile, String studentName, Double amountDue, 
 			String courseName, LocalDate dueDate) {
 		try {
 			Twilio.init(accountSid, authToken);
 
 			String toWhatsApp = "whatsapp:" + (mobile == null ? "" : mobile.trim().replaceAll("\\s+", ""));
 			if (toWhatsApp.length() <= "whatsapp:".length())
-				return; // no number
+				return; 
 
 			if (paymentOverdue7Days == null || paymentOverdue7Days.isBlank()) {
 				System.err.println("❌ Missing SID: set twilio.paymentOverdue7Days in application.properties");
 				return;
 			}
 
-			// Template vars: {{1}} name, {{2}} amount, {{3}} course, {{4}} due date
+			
 			String variablesJson = new com.fasterxml.jackson.databind.ObjectMapper()
 					.writeValueAsString(java.util.Map.of("1", safe(studentName, "Student"), "2", fmtAmount(amountDue),
 							"3", safe(courseName, "Course"), "4", safe(fmtDate(dueDate, "dd-MMM-yyyy"), "TBD")));
 
 			com.twilio.rest.api.v2010.account.Message.creator(new com.twilio.type.PhoneNumber(toWhatsApp),
-					new com.twilio.type.PhoneNumber(fromWhatsApp), "" // body empty when using Content SID
+					new com.twilio.type.PhoneNumber(fromWhatsApp), "" 
 			).setContentSid(paymentOverdue7Days).setContentVariables(variablesJson).create();
 
 		} catch (Exception e) {
@@ -377,14 +333,13 @@ public class WhatsAppService {
 
 			String loginLink = "https://hachion.co";
 
-			String variablesJson = new ObjectMapper().writeValueAsString(Map.of("1", studentName, // {{1}}
-					"2", courseName, // {{2}}
-					"3", accessDate, // {{3}}
-					"4", loginLink // {{4}}
+			String variablesJson = new ObjectMapper().writeValueAsString(Map.of("1", studentName, 
+					"2", courseName, 
+					"3", accessDate, 
+					"4", loginLink 
 			));
 
-			Message.creator(new PhoneNumber(toWhatsApp), new PhoneNumber(fromWhatsApp), "" // body must be empty when
-																							// using Content SID
+			Message.creator(new PhoneNumber(toWhatsApp), new PhoneNumber(fromWhatsApp), "" 
 			).setContentSid(selfPacedContentSid).setContentVariables(variablesJson).create();
 
 			System.out.println("✅ Self-paced WhatsApp sent to " + toWhatsApp);
@@ -403,7 +358,7 @@ public class WhatsAppService {
 			if (toWhatsApp.length() <= "whatsapp:".length())
 				return;
 
-			// ✅ Fetch ONLY duration from Course table using courseName
+			
 			String duration = "TBD";
 			if (requestBatch.getCourseName() != null && !requestBatch.getCourseName().isBlank()) {
 				duration = courseRepository.findNumberOfClassesByCourseName(requestBatch.getCourseName()).orElse("TBD");
@@ -423,6 +378,32 @@ public class WhatsAppService {
 			System.out.println("✅ WhatsApp enrollment utility sent to " + toWhatsApp);
 
 		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sendEnquiryWhatsApp(String mobile, String studentName, String courseName) {
+		try {
+
+			Twilio.init(accountSid, authToken);
+
+			String toWhatsApp = "whatsapp:" + mobile.trim().replaceAll("\\s+", "");
+
+			String safeName = (studentName != null && !studentName.isEmpty()) ? "*" + studentName + "* 👋"
+					: "*Student* 👋";
+
+			String safeCourse = (courseName != null && !courseName.isEmpty()) ? "*" + courseName + "* 📚"
+					: "*your selected course* 📚";
+
+			String variablesJson = new ObjectMapper().writeValueAsString(Map.of("1", safeName, "2", safeCourse));
+
+			Message message = Message.creator(new PhoneNumber(toWhatsApp), new PhoneNumber(fromWhatsApp), "")
+					.setContentSid(enquiryContentSid).setContentVariables(variablesJson).create();
+
+			System.out.println("✅ WhatsApp enquiry message sent to: " + toWhatsApp);
+
+		} catch (Exception e) {
+			System.err.println("❌ Error sending WhatsApp enquiry message:");
 			e.printStackTrace();
 		}
 	}

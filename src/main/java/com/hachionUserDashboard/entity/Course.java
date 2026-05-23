@@ -16,16 +16,18 @@ import jakarta.persistence.UniqueConstraint;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 @Table(name = "course", uniqueConstraints = { @UniqueConstraint(columnNames = { "course_category", "course_name" }) })
-
 public class Course {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 
-	@Column
+	@Column(nullable = false)
 	private String courseName;
 
-	@Column(name = "course_category")
+	@Column(name = "seo_h1_title", nullable = false)
+	private String seoH1Title;
+
+	@Column(name = "course_category", nullable = false)
 	private String courseCategory;
 	@Lob
 	private String courseImage;
@@ -33,7 +35,7 @@ public class Course {
 	@Column
 	private String youtubeLink;
 
-	@Column
+	@Column(nullable = false)
 	private String numberOfClasses;
 
 	@Column
@@ -59,85 +61,104 @@ public class Course {
 	@Column
 	private String keyHighlights6;
 
-	@Column
+	@Column(nullable = false)
 	private Double amount;
-	@Column
+	@Column(nullable = false)
 	private Double discount;
-	@Column
+
+	@Column(nullable = false)
 	private Double total;
 
-	@Column
+	@Column(nullable = false)
 	private Double mamount;
-	@Column
+
+	@Column(nullable = false)
 	private Double mdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double mtotal;
 
-	@Column
+	@Column(nullable = false)
 	private Double samount;
-	@Column
+
+	@Column(nullable = false)
 	private Double sdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double stotal;
 
-	@Column
+	@Column(nullable = false)
 	private Double sqamount;
-	@Column
+
+	@Column(nullable = false)
 	private Double sqdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double sqtotal;
 
-	@Column
+	@Column(nullable = false)
 	private Double camount;
-	@Column
+
+	@Column(nullable = false)
 	private Double cdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double ctotal;
 
 	// new columns for india location
 
-	@Column
+	@Column(nullable = false)
 	private Double iamount;
-	@Column
+
+	@Column(nullable = false)
 	private Double idiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double itotal;
 
-	@Column
+	@Column(nullable = false)
 	private Double imamount;
-	@Column
+
+	@Column(nullable = false)
 	private Double imdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double imtotal;
 
-	@Column
+	@Column(nullable = false)
 	private Double isamount;
-	@Column
+
+	@Column(nullable = false)
 	private Double isdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double istotal;
 
-	@Column
+	@Column(nullable = false)
 	private Double isqamount;
-	@Column
+
+	@Column(nullable = false)
 	private Double isqdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double isqtotal;
 
-	@Column
+	@Column(nullable = false)
 	private Double icamount;
-	@Column
+
+	@Column(nullable = false)
 	private Double icdiscount;
-	@Column
+
+	@Column(nullable = false)
 	private Double ictotal;
 
-	@Column
+	@Column(nullable = false)
 	private String shortCourse;
 
-	@Column
+	@Column(columnDefinition = "LONGTEXT")
 	private String aboutCourse;
 
-	@Column
+	@Column(nullable = false)
 	private int numberOfProjects;
 
 	@Column(columnDefinition = "LONGTEXT")
@@ -172,6 +193,9 @@ public class Course {
 
 	@Column(name = "default_trainer")
 	private String defaultTrainer;
+
+	@Column(name = "course_status")
+	private String courseStatus;
 
 	public Double getMamount() {
 		return mamount;
@@ -766,6 +790,22 @@ public class Course {
 
 	public void setDefaultTrainer(String defaultTrainer) {
 		this.defaultTrainer = defaultTrainer;
+	}
+
+	public String getCourseStatus() {
+		return courseStatus;
+	}
+
+	public void setCourseStatus(String courseStatus) {
+		this.courseStatus = courseStatus;
+	}
+
+	public String getSeoH1Title() {
+		return seoH1Title;
+	}
+
+	public void setSeoH1Title(String seoH1Title) {
+		this.seoH1Title = seoH1Title;
 	}
 
 }

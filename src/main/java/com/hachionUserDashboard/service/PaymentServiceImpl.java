@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import com.hachionUserDashboard.dto.PaymentInstallmentRequest;
 import com.hachionUserDashboard.dto.PaymentInstallmentResponse;
 import com.hachionUserDashboard.dto.PaymentRequest;
 import com.hachionUserDashboard.dto.PaymentResponse;
+import com.hachionUserDashboard.dto.PaymentSummaryDTO;
 import com.hachionUserDashboard.dto.StudentCourseInfo;
 import com.hachionUserDashboard.entity.Payment;
 import com.hachionUserDashboard.entity.PaymentInstallment;
@@ -45,7 +47,6 @@ import com.hachionUserDashboard.repository.PaymentRepository;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
 import Service.PaymentService;
-import com.hachionUserDashboard.service.WhatsAppService;
 
 @Service
 public class PaymentServiceImpl implements PaymentService {
@@ -82,6 +83,16 @@ public class PaymentServiceImpl implements PaymentService {
 
 	@Override
 	public PaymentResponse addPayment(PaymentRequest paymentRequest, List<MultipartFile> files) {
+		
+		int existingCount = paymentRepository.countByEmailAndCourseName(
+		        paymentRequest.getEmail(), 
+		        paymentRequest.getCourseName()
+		    );
+
+		    if (existingCount > 0) {
+		        throw new RuntimeException("This student (email: " + paymentRequest.getEmail() + 
+		            ") is already enrolled in the course: " + paymentRequest.getCourseName());
+		    }
 		Payment payment = new Payment();
 
 		payment.setStudentId(paymentRequest.getStudentId());
@@ -96,6 +107,7 @@ public class PaymentServiceImpl implements PaymentService {
 		payment.setNumberOfDays(paymentRequest.getNoOfDays());
 		payment.setTotalAmount(paymentRequest.getTotalAmount());
 		payment.setBalancePay(paymentRequest.getBalancePay());
+		payment.setCurrency(paymentRequest.getCurrency());
 		if (paymentRequest.getBalancePay() != null && paymentRequest.getBalancePay() == 0) {
 		    payment.setStopReminder("stop");
 		} else {
@@ -368,15 +380,35 @@ public class PaymentServiceImpl implements PaymentService {
 		return new StudentCourseInfo(id, name, emailId, mobileNum, new ArrayList<>(courses));
 	}
 
-	@Override
-	public Double getAmountByCourseName(String courseName) {
-		Double amount = courseRepository.findAmountByCourseName(courseName);
-		if (amount == null) {
-			throw new ResourceNotFoundException("This course is not available in the system");
-		}
-		return amount;
-	}
+//	@Override
+//	public Double getAmountByCourseName(String courseName) {
+//		Double amount = courseRepository.findAmountByCourseName(courseName);
+//		if (amount == null) {
+//			throw new ResourceNotFoundException("This course is not available in the system");
+//		}
+//		return amount;
+//	}
 
+	@Override
+	public Map<String, Double> getAmountsByCourseName(String courseName) {
+	    List<Object[]> result = courseRepository.findAmountsByCourseName(courseName);
+
+	    if (result == null || result.isEmpty()) {
+	        throw new ResourceNotFoundException("This course is not available in the system");
+	    }
+
+	    Object[] row = result.get(0);
+
+	    Double usdAmount = row[0] != null ? ((Number) row[0]).doubleValue() : 0;
+	    Double inrAmount = row[1] != null ? ((Number) row[1]).doubleValue() : 0;
+
+	    Map<String, Double> map = new HashMap<>();
+	    map.put("usdAmount", usdAmount);
+	    map.put("inrAmount", inrAmount);
+
+	    return map;
+	}
+	
 	@Override
 	public void deletePaymentById(Long id) {
 		Optional<Payment> optionalPayment = paymentRepository.findById(id);
@@ -454,6 +486,7 @@ public class PaymentServiceImpl implements PaymentService {
 		response.setInvoiceNumber(savedPayment.getInvoiceNumber());
 		response.setStatus(savedPayment.getStatus());
 		response.setStopReminder(savedPayment.getStopReminder());
+		response.setCurrency(savedPayment.getCurrency());
 
 		List<PaymentInstallmentResponse> installmentResponses = new ArrayList<>();
 		for (PaymentInstallment savedInstallment : savedPayment.getInstallments()) {
@@ -1178,5 +1211,29 @@ public class PaymentServiceImpl implements PaymentService {
 	    }
 
 	    return updated;
+	}
+	
+	public List<PaymentSummaryDTO> getPaymentSummary(
+	        LocalDate startDate,
+	        LocalDate endDate) {
+
+	    List<Object[]> results =
+	            paymentRepository.getPaymentSummary(startDate, endDate);
+
+	    return results.stream().map(result -> new PaymentSummaryDTO(
+
+	            result[0] != null ? result[0].toString() : "",
+
+	            result[1] != null ? ((Number) result[1]).doubleValue() : 0.0,
+
+	            result[2] != null ? ((Number) result[2]).doubleValue() : 0.0,
+
+	            result[3] != null ? ((Number) result[3]).longValue() : 0L,
+
+	            result[4] != null ? ((Number) result[4]).longValue() : 0L,
+
+	            result[5] != null ? ((Number) result[5]).doubleValue() : 0.0
+
+	    )).toList();
 	}
 }

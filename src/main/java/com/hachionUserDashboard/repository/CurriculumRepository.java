@@ -25,4 +25,9 @@ public interface CurriculumRepository extends JpaRepository<Curriculum, Integer>
 	@Query(value = "SELECT * FROM curriculum WHERE "
 			+ "LOWER(REPLACE(REPLACE(REPLACE(course_name, ' ', ''), '-', ''), '_', '')) = :normalizedCourse", nativeQuery = true)
 	List<Curriculum> findByNormalizedCourse(@Param("normalizedCourse") String normalizedCourse);
+	
+//	@Query(value = "SELECT curriculum_pdf FROM curriculum WHERE LOWER(course_name) = LOWER(:courseName)", nativeQuery = true)
+//	String findCurriculumByCourseName(@Param("courseName") String courseName);
+	@Query(value = "SELECT DISTINCT curriculum_pdf FROM curriculum WHERE LOWER(course_name) = LOWER(:courseName)", nativeQuery = true)
+	List<String> findCurriculumByCourseName(@Param("courseName") String courseName);
 }

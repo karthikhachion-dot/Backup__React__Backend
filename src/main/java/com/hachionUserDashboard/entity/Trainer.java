@@ -21,13 +21,13 @@ public class Trainer {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int trainer_id;
 
-	@Column
+	@Column(nullable = false)
 	private String trainer_name;
 
-	@Column
+	@Column(nullable = false)
 	private String category_name;
 
-	@Column
+	@Column(nullable = false)
 	private String course_name;
 
 	@Lob

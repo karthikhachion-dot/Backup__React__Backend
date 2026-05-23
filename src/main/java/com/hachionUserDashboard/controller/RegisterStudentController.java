@@ -18,8 +18,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.hachionUserDashboard.cronjobs.EmailCronService;
+import com.hachionUserDashboard.dto.EnquiryRequest;
+import com.hachionUserDashboard.dto.EnquiryResponse;
 import com.hachionUserDashboard.dto.ImportResponse;
+import com.hachionUserDashboard.dto.LeadDashboardDTO;
+import com.hachionUserDashboard.dto.RegisterStudentResponseDTO;
+import com.hachionUserDashboard.dto.StudentRemarkRequest;
+import com.hachionUserDashboard.dto.StudentRemarkResponse;
 import com.hachionUserDashboard.entity.RegisterStudent;
+import com.hachionUserDashboard.entity.StudentRemarksHistory;
+import com.hachionUserDashboard.repository.EmailAutomationRuleRepository;
 import com.hachionUserDashboard.repository.RegisterStudentRepository;
 import com.hachionUserDashboard.service.EmailService;
 import com.hachionUserDashboard.service.RegisterStudentService;
@@ -41,21 +50,20 @@ public class RegisterStudentController {
 	private EmailService emailService;
 
 	@Autowired
-	private WebhookSenderService webhookSenderService;
-	
-
-	@Autowired
 	private RegisterStudentService service;
 
-//	@GetMapping("/registerstudent/{id}")
-//	public ResponseEntity<RegisterStudent> getRegisterStudent(@PathVariable Integer id) {
-//		return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-//	}
+	@Autowired
+	private EmailCronService emailCronService;
+	
+	@Autowired
+	private EmailAutomationRuleRepository automationRuleRepository;
+	
+	@Autowired
+	private WebhookSenderService webhookSenderService;
+
 	@GetMapping("/registerstudent/{id}")
 	public ResponseEntity<RegisterStudent> getRegisterStudent(@PathVariable Long id) {
-	    return repo.findById(id)
-	            .map(ResponseEntity::ok)
-	            .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+		return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 	}
 
 	@GetMapping("/registerstudent")
@@ -82,6 +90,7 @@ public class RegisterStudentController {
 		student.setAdditional_email(null);
 		student.setAdditional_phone(0);
 		student.setDate(LocalDate.now());
+		student.setCoordinator(student.getCoordinator());
 
 		String tempPassword = "Hach@123";
 		String hashedPassword = passwordEncoder.encode(tempPassword);
@@ -89,8 +98,11 @@ public class RegisterStudentController {
 
 		String fullName = student.getUserName();
 		student.setStudentId(generateNextStudentId());
+		student.setLeadStatus(student.getLeadStatus());
+		student.setStatus(student.getStatus());
 
-		emailService.sendEmailForRegisterOfflineStudent(student.getEmail(), tempPassword, fullName);
+		student.setLeadTag(student.getLeadTag());
+		emailService.sendEmailForRegisterOffline(student.getEmail(), tempPassword, fullName, student.getCoordinator());
 
 		RegisterStudent save = repo.save(student);
 		webhookSenderService.sendRegistrationDetailsOffline(save);
@@ -115,7 +127,6 @@ public class RegisterStudentController {
 		return prefix + String.format("%03d", nextNumber);
 	}
 
-	
 	@PutMapping("/registerstudent/update/{id}")
 	public ResponseEntity<RegisterStudent> updateRegisterStudent(@PathVariable Long id,
 			@RequestBody RegisterStudent req) {
@@ -144,8 +155,8 @@ public class RegisterStudentController {
 			if (req.getVisa_status() != null)
 				existing.setVisa_status(req.getVisa_status());
 
-			if (req.getTime_zone() != null)
-				existing.setTime_zone(req.getTime_zone());
+//			if (req.getTime_zone() != null)
+//				existing.setTime_zone(req.getTime_zone());
 
 			if (req.getAnalyst_name() != null)
 				existing.setAnalyst_name(req.getAnalyst_name());
@@ -243,8 +254,82 @@ public class RegisterStudentController {
 
 			if (req.getLeadStatus() != null)
 				existing.setLeadStatus(req.getLeadStatus());
-
 			
+//			if (req.getLeadTag() != null) {
+//
+//			    // ✅ CHECK ONLY IF TAG IS CHANGING
+//			    boolean tagChanged =
+//			            existing.getLeadTag() == null ||
+//			            !existing.getLeadTag()
+//			                    .equalsIgnoreCase(req.getLeadTag());
+//
+//			    if (tagChanged) {
+//
+//			        Long automationCount =
+//			                automationRuleRepository
+//			                .existsRunningAutomationByLeadStatus(
+//			                        existing.getLeadTag());
+//
+//			        if (automationCount > 0) {
+//
+//			            throw new RuntimeException(
+//			                    "This lead is under email automation. Please wait until automation finishes.");
+//			        }
+//			    }
+//
+//			    existing.setLeadTag(req.getLeadTag());
+//			}
+			if (req.getLeadTag() != null || req.getTime_zone() != null) {
+
+			    boolean tagChanged = false;
+			    boolean timezoneChanged = false;
+
+			    // ✅ CHECK LEAD TAG CHANGE
+			    if (req.getLeadTag() != null) {
+
+			        tagChanged =
+			                existing.getLeadTag() == null ||
+			                !existing.getLeadTag()
+			                        .equalsIgnoreCase(req.getLeadTag());
+			    }
+
+			    // ✅ CHECK TIMEZONE CHANGE
+			    if (req.getTime_zone() != null) {
+
+			        timezoneChanged =
+			                existing.getTime_zone() == null ||
+			                !existing.getTime_zone()
+			                        .equalsIgnoreCase(req.getTime_zone());
+			    }
+
+			    // ✅ IF EITHER CHANGED → CHECK AUTOMATION
+			    if (tagChanged || timezoneChanged) {
+
+			        Long automationCount =
+			                automationRuleRepository
+			                .existsRunningAutomationByLeadStatusAndTimezone(
+			                        existing.getLeadTag(),
+			                        existing.getTime_zone());
+
+			        if (automationCount > 0) {
+
+			            throw new RuntimeException(
+			                    "This lead is under automation. Cannot change Lead Tag or Time Zone now.");
+			        }
+			    }
+
+			    // ✅ UPDATE VALUES
+			    if (req.getLeadTag() != null) {
+			        existing.setLeadTag(req.getLeadTag());
+			    }
+
+			    if (req.getTime_zone() != null) {
+			        existing.setTime_zone(req.getTime_zone());
+			    }
+			}
+			if (req.getStatus() != null)
+				existing.setStatus(req.getStatus());
+
 			// ===== AUDIT =====
 			existing.setDate(LocalDate.now()); // update date on edit
 
@@ -254,11 +339,10 @@ public class RegisterStudentController {
 		}).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 	}
 
-
 	@DeleteMapping("registerstudent/delete/{id}")
 	public ResponseEntity<?> deleteRegisterStudent(@PathVariable Long id) {
-	    repo.deleteById(id);
-	    return ResponseEntity.ok("Student deleted successfully.");
+		repo.deleteById(id);
+		return ResponseEntity.ok("Student deleted successfully.");
 	}
 
 	@GetMapping("/check-mobile")
@@ -270,6 +354,7 @@ public class RegisterStudentController {
 			return ResponseEntity.ok("Mobile number is available");
 		}
 	}
+
 	@PostMapping("/register-student/import")
 	public ResponseEntity<ImportResponse> importExcel(@RequestParam("file") MultipartFile file) {
 
@@ -280,5 +365,63 @@ public class RegisterStudentController {
 			e.printStackTrace();
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
+	}
+
+	@PostMapping("/register-student/add-remark")
+	public StudentRemarkResponse addRemark(@RequestBody StudentRemarkRequest request) {
+		return service.addStudentRemark(request);
+	}
+
+	@GetMapping("/remarks/{studentId}")
+	public List<StudentRemarksHistory> getRemarks(@PathVariable String studentId) {
+		return service.getRemarksByStudentId(studentId);
+	}
+
+	@PostMapping("/enquiryformcreate")
+	public EnquiryResponse createEnquiry(@RequestBody EnquiryRequest request) throws MessagingException {
+		return service.saveEnquiry(request);
+	}
+
+	@GetMapping("/registerstudent-with-remarks")
+	public List<RegisterStudentResponseDTO> getStudentsWithRemarks() {
+		return service.getStudentsWithRemarks();
+	}
+
+	@GetMapping("/lead-dashboard")
+	public List<LeadDashboardDTO> getLeadDashboard() {
+		return service.getLeadDashboard();
+	}
+
+	@GetMapping("/register-leadtag")
+	public ResponseEntity<List<String>> getAllLeadTags() {
+		List<String> tags = service.getAllUniqueLeadTags();
+		return ResponseEntity.ok(tags);
+	}
+
+	@GetMapping("/register-leadstatus")
+	public ResponseEntity<List<String>> getAllLeadStatus() {
+		List<String> statusList = service.getAllUniqueLeadStatus();
+		return ResponseEntity.ok(statusList);
+	}
+	@GetMapping("/get-status")
+	public ResponseEntity<?> getStatus(@RequestParam String email) {
+
+	    try {
+	        String status = service.getStudentStatus(email);
+
+	        return ResponseEntity.ok(status);
+
+	    } catch (RuntimeException ex) {
+	        return ResponseEntity.badRequest().body(ex.getMessage());
+	    }
+	}
+	@PostMapping("/send-email/{studentId}")
+	public ResponseEntity<?> sendEmail(@PathVariable String studentId) {
+	    emailCronService.sendSingleEmail(studentId);
+	    return ResponseEntity.ok("Email sent");
+	}
+	@GetMapping("/register-timezones")
+	public ResponseEntity<List<String>> getAllTimeZones() {
+	    return ResponseEntity.ok(service.getAllTimeZones());
 	}
 }

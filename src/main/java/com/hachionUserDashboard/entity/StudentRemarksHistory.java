@@ -1,7 +1,6 @@
 package com.hachionUserDashboard.entity;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,13 +19,13 @@ public class StudentRemarksHistory {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "remark")
+	@Column(name = "remark", columnDefinition = "TEXT")
 	private String remark;
 
 	@Column(name = "call_made_on")
 	private String callMadeOn;
 
-	@Column(name = "final_remark")
+	@Column(name = "final_remark",columnDefinition = "TEXT")
 	private String finalRemark;
 
 	@Column(name = "last_call_made_on")

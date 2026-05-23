@@ -32,6 +32,7 @@ import com.hachionUserDashboard.entity.Course;
 import com.hachionUserDashboard.entity.Trainer;
 import com.hachionUserDashboard.exception.ResourceNotFoundException;
 import com.hachionUserDashboard.repository.CourseRepository;
+import com.hachionUserDashboard.repository.CourseScheduleRepository;
 import com.hachionUserDashboard.repository.TrainerRepository;
 
 @CrossOrigin
@@ -45,14 +46,22 @@ public class CourseController {
 	@Autowired
 	private TrainerRepository trainerRepository;
 
+	@Autowired
+	private CourseScheduleRepository courseScheduleRepository;
+
 	@GetMapping("/{id}")
 	public ResponseEntity<Course> getCourse(@PathVariable Integer id) {
 		return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
 	}
 
+	@GetMapping("/allforadmin")
+	public List<Course> getAllCourseForAdmin() {
+		return repo.findAll();
+	}
+
 	@GetMapping("/all")
 	public List<Course> getAllCourse() {
-		return repo.findAll();
+		return repo.findAllActiveCourses();
 	}
 
 	@GetMapping("/summary")
@@ -207,8 +216,11 @@ public class CourseController {
 
 			return repo.findById(id).map(course -> {
 
+				String oldCourseName = course.getCourseName();
+
 				course.setCourseCategory(updatedCourse.getCourseCategory());
 				course.setCourseName(updatedCourse.getCourseName());
+				course.setSeoH1Title(updatedCourse.getSeoH1Title());
 				course.setShortCourse(updatedCourse.getShortCourse());
 				course.setDailySessions(updatedCourse.getDailySessions());
 
@@ -288,6 +300,20 @@ public class CourseController {
 				course.setSelfPacedLearning(updatedCourse.getSelfPacedLearning());
 				course.setDefaultTrainer(updatedCourse.getDefaultTrainer());
 
+				String newStatus = updatedCourse.getCourseStatus();
+
+				if ("Inactive".equalsIgnoreCase(newStatus)) {
+
+					int activeSchedules = courseScheduleRepository
+							.countActiveSchedules(updatedCourse.getCourseCategory(), updatedCourse.getCourseName());
+
+					if (activeSchedules > 0) {
+						return ResponseEntity.badRequest()
+								.body("This course having schedule, please wait until complete that schedule");
+					}
+				}
+				course.setCourseStatus(updatedCourse.getCourseStatus());
+
 				if (courseImage != null && !courseImage.isEmpty()) {
 					try {
 						String imagePath = saveImage(courseImage);
@@ -304,6 +330,65 @@ public class CourseController {
 				}
 
 				repo.save(course);
+
+				repo.updateCorporateCourse(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateCourseTools(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateCurriculum(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateDemoVideo(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateFaq(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateGeoKeyword(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateCorporateReview(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateProject(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateReview(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateTrendingCourse(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateUserReview(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateVideoAccess(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateSummerEvents(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateResume(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateRegularVideo(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateRegisterStudent(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateRequestBatch(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateTrainer(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateCertificate(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateCertificateDetails(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateCourseTable(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateEnroll(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updatePaymentTransactions(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updatePayments(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateStudentTracking(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateUploadImagesCategory(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateWorkshop(oldCourseName, updatedCourse.getCourseName());
+
+				repo.updateWorkshopSchedule(oldCourseName, updatedCourse.getCourseName());
+				
+				repo.updateScheduleTableCourse(oldCourseName, updatedCourse.getCourseName());
+
 				return ResponseEntity.ok("Course updated successfully.");
 
 			}).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Course not found."));

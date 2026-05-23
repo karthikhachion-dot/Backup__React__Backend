@@ -21,50 +21,53 @@ public class Payment {
 	@Column(name = "payment_id")
 	private Long paymentId;
 
-	@Column(name = "student_id")
+	@Column(name = "student_id", nullable = false)
 	private String studentId;
 
-	@Column(name = "student_name")
+	@Column(name = "student_name", nullable = false)
 	private String studentName;
 
-	@Column(name = "email")
+	@Column(name = "email", nullable = false)
 	private String email;
 
-	@Column(name = "mobile")
+	@Column(name = "mobile", nullable = false)
 	private String mobile;
 
-	@Column(name = "course_name")
+	@Column(name = "course_name", nullable = false)
 	private String courseName;
 
-	@Column(name = "course_fee")
+	@Column(name = "course_fee", nullable = false)
 	private Double courseFee;
 
-	@Column(name = "tax")
+	@Column(name = "tax", nullable = false)
 	private Integer tax;
 
-	@Column(name = "discount")
+	@Column(name = "discount", nullable = false)
 	private Integer discount;
 
-	@Column(name = "no_of_installments")
+	@Column(name = "no_of_installments", nullable = false)
 	private Integer numberOfInstallments;
 
-	@Column(name = "no_of_days")
+	@Column(name = "no_of_days", nullable = false)
 	private Integer numberOfDays;
 
-	@Column(name = "total_amount")
+	@Column(name = "total_amount", nullable = false)
 	private Double totalAmount;
 
-	@Column(name = "balance_pay")
+	@Column(name = "balance_pay", nullable = false)
 	private Double balancePay;
 
 	@Column(name = "invoice_number")
 	private String invoiceNumber;
 
-	@Column(name = "status")
+	@Column(name = "status", nullable = false)
 	private String status;
 
-	@Column(name = "stop_reminder")
+	@Column(name = "stop_reminder", nullable = false)
 	private String stopReminder;
+
+	@Column(name = "currency", nullable = false)
+	private String currency;
 
 	@OneToMany(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<PaymentInstallment> installments = new ArrayList<>();
@@ -203,6 +206,14 @@ public class Payment {
 
 	public void setStopReminder(String stopReminder) {
 		this.stopReminder = stopReminder;
+	}
+
+	public String getCurrency() {
+		return currency;
+	}
+
+	public void setCurrency(String currency) {
+		this.currency = currency;
 	}
 
 }

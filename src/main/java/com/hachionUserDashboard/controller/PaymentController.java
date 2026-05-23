@@ -3,9 +3,7 @@ package com.hachionUserDashboard.controller;
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +31,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.hachionUserDashboard.dto.PaymentRequest;
 import com.hachionUserDashboard.dto.PaymentResponse;
+import com.hachionUserDashboard.dto.PaymentSummaryDTO;
+import com.hachionUserDashboard.dto.StopReminderRequest;
 import com.hachionUserDashboard.dto.StudentCourseInfo;
-import com.hachionUserDashboard.entity.Payment;
-import com.hachionUserDashboard.repository.PaymentRepository;
 
 import Service.PaymentService;
 
@@ -46,9 +44,6 @@ public class PaymentController {
 
 	@Autowired
 	private PaymentService paymentService;
-
-	@Autowired
-	private PaymentRepository paymentRepository;
 
 	@Value("${invoice.path}")
 	private String invoiceDirectoryPath;
@@ -75,16 +70,16 @@ public class PaymentController {
 
 	@GetMapping("/courseFee")
 	public ResponseEntity<Map<String, Object>> getCourseAmount(@RequestParam String courseName) {
-		Double amount = paymentService.getAmountByCourseName(courseName);
-		if (amount == null) {
-			return ResponseEntity.notFound().build();
-		}
-
+//		Double amount = paymentService.getAmountByCourseName(courseName);
+		Map<String, Double> amounts = paymentService.getAmountsByCourseName(courseName);
 		Map<String, Object> response = new HashMap<>();
 		response.put("courseName", courseName);
-		response.put("courseFee", amount);
+		response.put("usdAmount", amounts.get("usdAmount"));
+		response.put("inrAmount", amounts.get("inrAmount"));
 
 		return ResponseEntity.ok(response);
+
+//		return ResponseEntity.ok(response);
 	}
 
 	@GetMapping
@@ -154,4 +149,28 @@ public class PaymentController {
 		}
 	}
 
+	@PutMapping("/stop-reminder")
+	public ResponseEntity<?> updateStopReminder(@RequestBody StopReminderRequest request) {
+
+		int updated = paymentService.updateStopReminder(request.getStopReminder(), request.getCourseName(),
+				request.getStudentId(), request.getEmail());
+
+		if (updated > 0) {
+			return ResponseEntity.ok(Map.of("success", true, "rowsUpdated", updated));
+		} else {
+			return ResponseEntity.ok(Map.of("success", false, "message", "No matching record found"));
+		}
+	}
+
+	@GetMapping("/payment-summary")
+	public ResponseEntity<List<PaymentSummaryDTO>> getPaymentSummary(@RequestParam String startDate,
+			@RequestParam String endDate) {
+
+		LocalDate start = LocalDate.parse(startDate);
+		LocalDate end = LocalDate.parse(endDate);
+
+		List<PaymentSummaryDTO> response = paymentService.getPaymentSummary(start, end);
+
+		return ResponseEntity.ok(response);
+	}
 }

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +31,10 @@ public class EmployeeService {
 	}
 
 	public Employee addEmployee(Employee employee, MultipartFile companyImage) throws IOException {
+		int count = employeeRepository.countByEmail(employee.getEmail());
+		if (count > 0) {
+			throw new RuntimeException("Duplicate Details is not allowed");
+		}
 		if (companyImage != null && !companyImage.isEmpty()) {
 			String imagePath = saveOrReplaceImage(null, companyImage, employee.getEmail());
 			employee.setCompanyImage(imagePath);
@@ -49,6 +54,8 @@ public class EmployeeService {
 		existing.setDepartment(updated.getDepartment());
 		existing.setRole(updated.getRole());
 		existing.setAdditionalInfo(updated.getAdditionalInfo());
+		existing.setRecordingsFolderId(updated.getRecordingsFolderId());
+		existing.setGoogleFormUrl(updated.getGoogleFormUrl());
 
 		if (companyImage != null && !companyImage.isEmpty()) {
 			String imagePath = saveOrReplaceImage(existing.getCompanyImage(), companyImage, existing.getEmail());
@@ -115,5 +122,30 @@ public class EmployeeService {
 
 	public List<Employee> getEmployeesByDepartment(String department) {
 		return employeeRepository.findByDepartmentIgnoreCase(department);
+	}
+
+	public List<Employee> getEmployeesByDepartments(List<String> departments) {
+		return employeeRepository.findByDepartmentIn(departments);
+	}
+
+	public List<String> getRecordingFoldersByName(String name) {
+		return employeeRepository.findAllByName(name).stream().map(Employee::getRecordingsFolderId)
+				.filter(Objects::nonNull).toList();
+	}
+
+	public List<String> getEmployeeNamesByDepartments(List<String> departments) {
+		return employeeRepository.findEmployeeNamesByDepartmentIn(departments);
+	}
+
+	public List<String> getUniqueGoogleFormUrls() {
+		return employeeRepository.findUniqueGoogleFormUrls();
+	}
+
+	public List<String> getAllEmployeeNames() {
+		return employeeRepository.getAllDropdownEmployees();
+	}
+
+	public List<String> getSeoTeamNames() {
+		return employeeRepository.getSeoTeamNames();
 	}
 }

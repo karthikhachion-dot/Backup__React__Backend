@@ -15,6 +15,7 @@ public interface TrainerRepository extends JpaRepository<Trainer, Integer> {
 //	@Query("SELECT t.summary FROM Trainer t WHERE t.trainer_name = :trainerName")
 //	String findSummaryByTrainerName(@Param("trainerName") String trainerName);
 
+//	@Query("SELECT t.summary FROM Trainer t WHERE t.trainer_name = :trainerName AND t.course_name = :courseName")
 	@Query(value = "SELECT summary FROM trainer WHERE trainer_name = :trainerName AND course_name = :courseName LIMIT 1", nativeQuery = true)
 	String findSummaryByTrainerNameAndCourse(@Param("trainerName") String trainerName,
 			@Param("courseName") String courseName);

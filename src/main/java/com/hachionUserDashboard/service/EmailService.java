@@ -3,6 +3,8 @@ package com.hachionUserDashboard.service;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +17,9 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import com.hachionUserDashboard.dto.PaymentRequest;
+import com.hachionUserDashboard.entity.Employee;
+import com.hachionUserDashboard.repository.CurriculumRepository;
+import com.hachionUserDashboard.repository.EmployeeRepository;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -28,6 +33,18 @@ public class EmailService {
 	@Value("${spring.mail.username}")
 	private String adminEmail;
 
+	@Autowired
+	private CurriculumRepository curriculumRepository;
+
+	
+	@Autowired
+	private CommonEmailTemplateService commonEmailTemplateService;
+	
+
+	@Autowired
+	private EmployeeRepository employeeRepository;
+	
+	
 	private String buildCourseSlug(String courseName) {
 		if (courseName == null || courseName.isBlank()) {
 			return "";
@@ -37,7 +54,7 @@ public class EmailService {
 		try {
 			slug = java.net.URLDecoder.decode(slug, java.nio.charset.StandardCharsets.UTF_8);
 		} catch (Exception e) {
-			
+
 		}
 
 		slug = slug.replaceAll("---+", " - ").replaceAll("\\b([a-zA-Z]{2,3})-(\\d{3})\\b", "$1@@$2")
@@ -271,7 +288,7 @@ public class EmailService {
 			String safeUserName = userName != null ? userName : "Student";
 			String safeEmail = toEmail != null ? toEmail : "";
 			String safePassword = tempPassword != null ? tempPassword : "Hach@123";
-			
+
 			String currentYear = String.valueOf(java.time.LocalDate.now().getYear());
 
 //			ClassPathResource resource = new ClassPathResource("templates/register_offline_students_email.html");
@@ -284,7 +301,8 @@ public class EmailService {
 			}
 
 			htmlContent = htmlContent.replace("[Student First Name]", safeUserName)
-					.replace("[Student Email]", safeEmail).replace("Hach@123", safePassword).replace("[Year]", currentYear);
+					.replace("[Student Email]", safeEmail).replace("Hach@123", safePassword)
+					.replace("[Year]", currentYear);
 
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -313,7 +331,7 @@ public class EmailService {
 					: studentFullName;
 
 			String safeUserName = userName != null ? userName : "Student";
-			
+
 			String currentYear = String.valueOf(java.time.LocalDate.now().getYear());
 
 			ClassPathResource resource = new ClassPathResource("templates/register_online_students_email.html");
@@ -321,7 +339,8 @@ public class EmailService {
 			try (InputStream inputStream = resource.getInputStream()) {
 				htmlContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 			}
-			htmlContent = htmlContent.replace("[Student First Name]", safeUserName).replace("[Year]", currentYear);;
+			htmlContent = htmlContent.replace("[Student First Name]", safeUserName).replace("[Year]", currentYear);
+			;
 
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -341,7 +360,6 @@ public class EmailService {
 			throw new MessagingException("Failed to send welcome email", e);
 		}
 	}
-
 
 	public void sendEmailForEnrollForLiveDemo(String toEmail, String technologyName, String day, String date,
 			String time, String timezone, String googleMeetLink, String meetingId, String passcode,
@@ -704,68 +722,62 @@ public class EmailService {
 	}
 
 	public void sendInstallmentRequestSubmittedEmail(String toEmail, String studentName, String courseName)
-	        throws MessagingException {
+			throws MessagingException {
 
-	    try {
-	        String safeName = studentName != null ? studentName : "Student";
-	        String safeCourse = courseName != null ? courseName : "your course";
+		try {
+			String safeName = studentName != null ? studentName : "Student";
+			String safeCourse = courseName != null ? courseName : "your course";
 
-	        // Build course URL using SAME slug logic as frontend
-	        String courseSlug = buildCourseSlug(safeCourse);
-	        String courseUrl = "https://hachion.co/coursedetails/" + courseSlug;
+			// Build course URL using SAME slug logic as frontend
+			String courseSlug = buildCourseSlug(safeCourse);
+			String courseUrl = "https://hachion.co/coursedetails/" + courseSlug;
 
-	        // Fallback home URL
-	        String homeUrl = "https://hachion.co";
+			// Fallback home URL
+			String homeUrl = "https://hachion.co";
 
-	        String subject = "New Installment Request for " + safeCourse + " is Submitted | Action Required";
+			String subject = "New Installment Request for " + safeCourse + " is Submitted | Action Required";
 
-	        String htmlContent = """
-	                <p>Dear %s,</p>
-	                <p>Greetings from Hachion 🌟</p>
-	                <p>Thank you for taking the next step in your learning journey with us.</p>
-	                <p>We’re happy to inform you that your request for the <b>%s</b> installment payment option has been successfully received.
-	                Our admin team is currently reviewing your request, and it will be approved shortly after acknowledgment.</p>
+			String htmlContent = """
+					<p>Dear %s,</p>
+					<p>Greetings from Hachion 🌟</p>
+					<p>Thank you for taking the next step in your learning journey with us.</p>
+					<p>We’re happy to inform you that your request for the <b>%s</b> installment payment option has been successfully received.
+					Our admin team is currently reviewing your request, and it will be approved shortly after acknowledgment.</p>
 
-	                <p><b>What you can expect next:</b></p>
-	                <ul>
-	                    <li>✔ Your installment request will be reviewed by our team</li>
-	                    <li>✔ You’ll receive a confirmation email once it’s approved</li>
-	                    <li>✔ After approval, you can proceed with enrollment without any hassle</li>
-	                </ul>
+					<p><b>What you can expect next:</b></p>
+					<ul>
+					    <li>✔ Your installment request will be reviewed by our team</li>
+					    <li>✔ You’ll receive a confirmation email once it’s approved</li>
+					    <li>✔ After approval, you can proceed with enrollment without any hassle</li>
+					</ul>
 
-	                <p>At Hachion, we’re committed to making quality learning accessible and flexible, so finances never hold back your career growth.</p>
-	                <p>If you need any assistance or have questions, our support team is always here to help.</p>
+					<p>At Hachion, we’re committed to making quality learning accessible and flexible, so finances never hold back your career growth.</p>
+					<p>If you need any assistance or have questions, our support team is always here to help.</p>
 
-	                <p><b>Useful links:</b></p>
-	                <p>
-	                    🔗 Course Page: <a href="%s">%s</a><br/>
-	                    🌐 Hachion Home: <a href="%s">%s</a>
-	                </p>
+					<p><b>Useful links:</b></p>
+					<p>
+					    🔗 Course Page: <a href="%s">%s</a><br/>
+					    🌐 Hachion Home: <a href="%s">%s</a>
+					</p>
 
-	                <p>Warm regards,<br/>Team Hachion</p>
-	                """
-	                .formatted(
-	                        safeName,
-	                        safeCourse,
-	                        courseUrl, courseUrl,
-	                        homeUrl, homeUrl
-	                );
+					<p>Warm regards,<br/>Team Hachion</p>
+					"""
+					.formatted(safeName, safeCourse, courseUrl, courseUrl, homeUrl, homeUrl);
 
-	        MimeMessage mimeMessage = mailSender.createMimeMessage();
-	        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+			MimeMessage mimeMessage = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-	        helper.setTo(toEmail);
-	        helper.setCc("trainings@hachion.co");
-	        helper.setSubject(subject);
-	        helper.setText(htmlContent, true);
+			helper.setTo(toEmail);
+			helper.setCc("trainings@hachion.co");
+			helper.setSubject(subject);
+			helper.setText(htmlContent, true);
 
-	        mailSender.send(mimeMessage);
+			mailSender.send(mimeMessage);
 
-	    } catch (Exception e) {
-	        throw new MessagingException("Failed to send installment request submitted email", e);
-	    }
+		} catch (Exception e) {
+			throw new MessagingException("Failed to send installment request submitted email", e);
+		}
 	}
-
 
 	public void sendInstallmentRequestAdminEmail(String userName, String userEmail, String courseName)
 			throws MessagingException {
@@ -825,133 +837,572 @@ public class EmailService {
 	}
 
 	public void sendInstallmentApprovedEmail(String toEmail, String studentName, String courseName)
-	        throws MessagingException {
+			throws MessagingException {
 
-	    try {
-	        String safeName = studentName != null ? studentName : "Learner";
-	        String safeCourse = courseName != null ? courseName : "your course";
+		try {
+			String safeName = studentName != null ? studentName : "Learner";
+			String safeCourse = courseName != null ? courseName : "your course";
 
-	        String courseSlug = buildCourseSlug(safeCourse);
-	        String courseUrl = "https://hachion.co/coursedetails/" + courseSlug;
+			String courseSlug = buildCourseSlug(safeCourse);
+			String courseUrl = "https://hachion.co/coursedetails/" + courseSlug;
 
-	        // Fallback home URL
-	        String homeUrl = "https://hachion.co";
+			// Fallback home URL
+			String homeUrl = "https://hachion.co";
 
-	        String subject = "Installment Request for " + safeCourse + " Approved - You’re All Set to Enroll | Hachion";
+			String subject = "Installment Request for " + safeCourse + " Approved - You’re All Set to Enroll | Hachion";
 
-	        String htmlContent = """
-	                <p>Dear %s,</p>
-	                <p>Greetings from Hachion 🎉</p>
+			String htmlContent = """
+					<p>Dear %s,</p>
+					<p>Greetings from Hachion 🎉</p>
 
-	                <p>We’re pleased to inform you that your installment payment request for <b>%s</b> has been successfully reviewed and approved by our admin team.</p>
+					<p>We’re pleased to inform you that your installment payment request for <b>%s</b> has been successfully reviewed and approved by our admin team.</p>
 
-	                <p><b>What’s next?</b></p>
-	                <ul>
-	                    <li>✔ Your installment option is now activated</li>
-	                    <li>✔ You can proceed with enrollment using the approved installment plan</li>
-	                    <li>✔ Start your learning journey without any payment stress</li>
-	                </ul>
+					<p><b>What’s next?</b></p>
+					<ul>
+					    <li>✔ Your installment option is now activated</li>
+					    <li>✔ You can proceed with enrollment using the approved installment plan</li>
+					    <li>✔ Start your learning journey without any payment stress</li>
+					</ul>
 
-	                <p>We’re excited to support you in building skills that move your career forward. At Hachion, flexibility and learner success always come first.</p>
+					<p>We’re excited to support you in building skills that move your career forward. At Hachion, flexibility and learner success always come first.</p>
 
-	                <p>If you need any help while completing enrollment, feel free to reach out to our support team.</p>
+					<p>If you need any help while completing enrollment, feel free to reach out to our support team.</p>
 
-	                <p><b>Useful links:</b></p>
-	                <p>
-	                    🔗 Course Page: <a href="%s">%s</a><br/>
-	                    🌐 Hachion Home: <a href="%s">%s</a>
-	                </p>
+					<p><b>Useful links:</b></p>
+					<p>
+					    🔗 Course Page: <a href="%s">%s</a><br/>
+					    🌐 Hachion Home: <a href="%s">%s</a>
+					</p>
 
-	                <p>Best regards,<br/>
-	                <b>Hachion Platform Notification System</b><br/>
-	                Online Training | Career-Focused Learning</p>
-	                """
-	                .formatted(
-	                        safeName,
-	                        safeCourse,
-	                        courseUrl, courseUrl,
-	                        homeUrl, homeUrl
-	                );
+					<p>Best regards,<br/>
+					<b>Hachion Platform Notification System</b><br/>
+					Online Training | Career-Focused Learning</p>
+					"""
+					.formatted(safeName, safeCourse, courseUrl, courseUrl, homeUrl, homeUrl);
 
-	        MimeMessage mimeMessage = mailSender.createMimeMessage();
-	        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+			MimeMessage mimeMessage = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-	        helper.setTo(toEmail);
-	        helper.setSubject(subject);
-	        helper.setText(htmlContent, true);
+			helper.setTo(toEmail);
+			helper.setSubject(subject);
+			helper.setText(htmlContent, true);
 
-	        mailSender.send(mimeMessage);
+			mailSender.send(mimeMessage);
 
-	    } catch (Exception e) {
-	        throw new MessagingException("Failed to send installment approval email", e);
-	    }
+		} catch (Exception e) {
+			throw new MessagingException("Failed to send installment approval email", e);
+		}
 	}
 
-
 	public void sendInstallmentRejectedEmail(String toEmail, String studentName, String courseName)
-	        throws MessagingException {
+			throws MessagingException {
 
-	    try {
-	        String safeName = studentName != null ? studentName : "Learner";
-	        String safeCourse = courseName != null ? courseName : "your course";
+		try {
+			String safeName = studentName != null ? studentName : "Learner";
+			String safeCourse = courseName != null ? courseName : "your course";
 
-	        // Build course URL using SAME slug logic as frontend
-	        String courseSlug = buildCourseSlug(safeCourse);
-	        String courseUrl = "https://hachion.co/coursedetails/" + courseSlug;
+			// Build course URL using SAME slug logic as frontend
+			String courseSlug = buildCourseSlug(safeCourse);
+			String courseUrl = "https://hachion.co/coursedetails/" + courseSlug;
 
-	        // Fallback home URL
-	        String homeUrl = "https://hachion.co";
+			// Fallback home URL
+			String homeUrl = "https://hachion.co";
 
-	        String subject = "Update on Your Installment Request | Hachion";
+			String subject = "Update on Your Installment Request | Hachion";
 
-	        String htmlContent = """
-	                <p>Dear %s,</p>
-	                <p>Greetings from Hachion,</p>
+			String htmlContent = """
+					<p>Dear %s,</p>
+					<p>Greetings from Hachion,</p>
 
-	                <p>Thank you for your interest in the installment payment option.</p>
+					<p>Thank you for your interest in the installment payment option.</p>
 
-	                <p>After careful review, we regret to inform you that your installment request for <b>%s</b> could not be approved at this time, as the selected installment details were not valid or did not meet the required criteria.</p>
+					<p>After careful review, we regret to inform you that your installment request for <b>%s</b> could not be approved at this time, as the selected installment details were not valid or did not meet the required criteria.</p>
 
-	                <p><b>What you can do next:</b></p>
-	                <ul>
-	                    <li>✔ Review your installment selection</li>
-	                    <li>✔ Reach out to your course instructor for guidance</li>
-	                    <li>✔ Contact our support team for further clarification and assistance</li>
-	                </ul>
+					<p><b>What you can do next:</b></p>
+					<ul>
+					    <li>✔ Review your installment selection</li>
+					    <li>✔ Reach out to your course instructor for guidance</li>
+					    <li>✔ Contact our support team for further clarification and assistance</li>
+					</ul>
 
-	                <p>Our team is always here to help you find the best possible way to continue your learning journey with Hachion.</p>
+					<p>Our team is always here to help you find the best possible way to continue your learning journey with Hachion.</p>
 
-	                <p>Thank you for your understanding and cooperation.</p>
+					<p>Thank you for your understanding and cooperation.</p>
 
-	                <p><b>Useful links:</b></p>
-	                <p>
-	                    🔗 Course Page: <a href="%s">%s</a><br/>
-	                    🌐 Hachion Home: <a href="%s">%s</a>
-	                </p>
+					<p><b>Useful links:</b></p>
+					<p>
+					    🔗 Course Page: <a href="%s">%s</a><br/>
+					    🌐 Hachion Home: <a href="%s">%s</a>
+					</p>
 
-	                <p>Best regards,<br/>
-	                <b>Hachion Platform Notification System</b><br/>
-	                Online Training | Career-Focused Learning</p>
-	                """
-	                .formatted(
-	                        safeName,
-	                        safeCourse,
-	                        courseUrl, courseUrl,
-	                        homeUrl, homeUrl
-	                );
+					<p>Best regards,<br/>
+					<b>Hachion Platform Notification System</b><br/>
+					Online Training | Career-Focused Learning</p>
+					"""
+					.formatted(safeName, safeCourse, courseUrl, courseUrl, homeUrl, homeUrl);
 
-	        MimeMessage mimeMessage = mailSender.createMimeMessage();
-	        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+			MimeMessage mimeMessage = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-	        helper.setTo(toEmail);
-	        helper.setSubject(subject);
-	        helper.setText(htmlContent, true);
+			helper.setTo(toEmail);
+			helper.setSubject(subject);
+			helper.setText(htmlContent, true);
 
-	        mailSender.send(mimeMessage);
+			mailSender.send(mimeMessage);
 
-	    } catch (Exception e) {
-	        throw new MessagingException("Failed to send installment rejected email", e);
-	    }
+		} catch (Exception e) {
+			throw new MessagingException("Failed to send installment rejected email", e);
+		}
+	}
+
+//	public void sendEmailForReactGoogleForm(
+//	        String toEmail,
+//	        String tempPassword,
+//	        String studentFullName,
+//	        String courseName
+//	) throws MessagingException {
+//
+//	    try {
+//
+//	    	String safeUserName = (studentFullName != null && !studentFullName.trim().isEmpty())
+//	    	        ? studentFullName.trim()
+//	    	        : "Student";
+//	        String safeEmail = toEmail != null ? toEmail : "";
+//	        String safePassword = tempPassword != null ? tempPassword : "Hach@123";
+//
+//	        // ✅ Use your existing methods
+//	        String courseUrl = generateCourseUrl(courseName);
+//	        String curriculumUrl = getCurriculumUrl(courseName);
+//
+//	        String htmlContent =
+//	                "<div style='font-family: Arial, sans-serif; line-height:1.8; color:#333;'>"
+//
+//	                        + "<p>Hello " + safeUserName + ",</p>"
+//
+//	                        + "<p style='font-size:16px;'><b>Welcome to Hachion! 🎉</b></p>"
+//
+//	                        + "<p>Thank you for registering with us. We’re excited to have you onboard and help you take the next step in your career.</p>"
+//
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//	                        + "<p>🔐 Your Portal Access</p>"
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//
+//	                        + "<p>"
+//	                        + "Portal: <a href='https://www.hachion.co/login'>https://www.hachion.co/login</a><br/>"
+//	                        + "Login Email: " + safeEmail + "<br/>"
+//	                        + "Temporary Password: " + safePassword + "<br/><br/>"
+//	                        + "👉 For security, please update your password after your first login."
+//	                        + "</p>"
+//
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//	                        + "<p><b>📚 Course Resources</b></p>"
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//
+//	                        + "<p>"
+//	                        + "📖 Course Page<br/>"
+//	                        + "<a href='" + courseUrl + "'>" + courseUrl + "</a><br/><br/>"
+//
+//	                        + "📥 Curriculum (Syllabus PDF)<br/>"
+//	                        + "<a href='" + curriculumUrl + "'>" + curriculumUrl + "</a><br/><br/>"
+//
+//+ "🎥 Book a Free Demo Session<br/>"
+//+ "<a href='" + courseUrl + "'>" + courseUrl + "</a><br/>"
+//+ "<span style='font-size:13px; color:#555;'>"
+//+ "(User will be redirected to the <b>\"Try Before You Enroll\"</b> section on the course page)"
+//+ "</span><br/><br/>"
+//
+//+ "<span style='font-size:13px; color:#555;'>"
+//+ "If no demo sessions are available for this course, you can use the below option"
+//+ "</span><br/>"
+//+ "📱 Chat with us to schedule your demo<br/>"
+//+ "<a href='https://wa.me/17324852499'>https://wa.me/17324852499</a>"
+//+ "</p>"
+//
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//	                        + "<p><b>🚀 What Happens Next?</b></p>"
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//
+//	                        + "<p>"
+//	                        + "✔ Our training coordinator will contact you within 24 hours<br/>"
+//	                        + "✔ You’ll receive guidance on batches, schedules, and next steps<br/>"
+//	                        + "✔ We’ll help you plan your learning path based on your goals"
+//	                        + "</p>"
+//
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//	                        + "<p><b>🤝 Need Help?</b></p>"
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//
+//	                        + "<p>"
+//	                        + "If you have any questions, feel free to reply to this email or contact us anytime.<br/><br/>"
+//	                        + "📧 trainings@hachion.co<br/>"
+//	                        + "🌐 <a href='https://www.hachion.co'>https://www.hachion.co</a>"
+//	                        + "</p>"
+//
+//	                        + "<p>━━━━━━━━━━━━━━━━━━━</p>"
+//
+//	                        + "<p>We look forward to supporting your learning journey!</p>"
+//
+//	                        + "<p><b>Best Regards,<br/>Team Hachion</b></p>"
+//
+//	                        + "</div>";
+//
+//	        MimeMessage mimeMessage = mailSender.createMimeMessage();
+//	        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+//
+//	        helper.setTo(toEmail);
+//	        helper.setCc("trainings@hachion.co");
+//	        helper.setSubject("Welcome to Hachion – Your Course Access 🚀");
+//	        helper.setText(htmlContent, true);
+//
+//	        mailSender.send(mimeMessage);
+//
+//	    } catch (Exception e) {
+//	        throw new MessagingException("Failed to send welcome email", e);
+//	    }
+//	}
+	public void sendEmailForReactGoogleForm(String toEmail, String tempPassword, String studentFullName,
+			String courseName) throws MessagingException {
+
+		try {
+
+			String safeUserName = (studentFullName != null && !studentFullName.trim().isEmpty())
+					? studentFullName.trim()
+					: "Student";
+
+			String safeEmail = toEmail != null ? toEmail : "";
+			String safePassword = tempPassword != null ? tempPassword : "Hach@123";
+
+			String courseUrl = generateCourseUrl(courseName);
+			String curriculumUrl = getCurriculumUrl(courseName);
+
+			String htmlContent = "<div style='font-family: Arial, sans-serif; color:#333; line-height:1.6;'>"
+
+					// Greeting
+					+ "<div>Hello " + safeUserName + ",</div><br/>"
+
+					+ "<div style='font-size:16px; font-weight:bold;'>Welcome to Hachion! 🎉</div><br/>"
+
+					+ "<div>Thank you for registering with us. We’re excited to have you onboard and help you take the next step in your career.</div><br/><br/>"
+
+					// Portal Access
+					+ "<div style='font-weight:bold; font-size:15px;'>🔐 Your Portal Access</div><br/>"
+
+					+ "<div>" + "Portal: <a href='https://www.hachion.co/login'>https://www.hachion.co/login</a><br/>"
+					+ "Login Email: " + safeEmail + "<br/>" + "Temporary Password: " + safePassword + "<br/>"
+					+ "<span style='font-size:13px;'>👉 For security, please update your password after your first login.</span>"
+					+ "</div><br/><br/>"
+
+					// Course Resources
+					+ "<div style='font-weight:bold; font-size:15px;'>📚 Course Resources</div><br/>"
+
+					+ "<div>" + "📖 Course Page<br/>" + "<a href='" + courseUrl + "'>" + courseUrl + "</a><br/><br/>"
+
+					+ "📥 Curriculum (Syllabus PDF)<br/>" + "<a href='" + curriculumUrl + "'>" + curriculumUrl
+					+ "</a><br/><br/>"
+
+					+ "🎥 Book a Free Demo Session<br/>" + "<a href='" + courseUrl + "'>" + courseUrl + "</a><br/><br/>"
+
+					+ "<span style='font-size:13px; color:#555;'>"
+					+ "If no demo sessions are available for this course, you can use the below option"
+					+ "</span><br/><br/>"
+
+					+ "📱 Chat with us to schedule your demo<br/>"
+					+ "<a href='https://wa.me/17324852499'>https://wa.me/17324852499</a>" + "</div><br/><br/>"
+
+					// What Next
+					+ "<div style='font-weight:bold; font-size:15px;'>🚀 What Happens Next?</div><br/>"
+
+					+ "<div>" + "✔ Our training coordinator will contact you within 24 hours<br/>"
+					+ "✔ You’ll receive guidance on batches, schedules, and next steps<br/>"
+					+ "✔ We’ll help you plan your learning path based on your goals" + "</div><br/><br/>"
+
+					// Help Section
+					+ "<div style='font-weight:bold; font-size:15px;'>🤝 Need Help?</div><br/>"
+
+					+ "<div>"
+					+ "If you have any questions, feel free to reply to this email or contact us anytime.<br/><br/>"
+					+ "📧 trainings@hachion.co<br/>" + "🌐 <a href='https://www.hachion.co'>https://www.hachion.co</a>"
+					+ "</div><br/><br/>"
+
+					// Closing
+					+ "<div>We look forward to supporting your learning journey!</div><br/>"
+
+					+ "<div><b>Best Regards,<br/>Team Hachion</b></div>"
+
+					+ "</div>";
+			MimeMessage mimeMessage = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+			helper.setTo(toEmail);
+			helper.setCc("trainings@hachion.co");
+			helper.setSubject("Welcome to Hachion – Your Course Access 🚀");
+			helper.setText(htmlContent, true);
+
+			mailSender.send(mimeMessage);
+
+		} catch (Exception e) {
+			throw new MessagingException("Failed to send welcome email", e);
+		}
+	}
+
+	private String generateCourseUrl(String courseName) {
+
+		if (courseName == null || courseName.isEmpty()) {
+			return "https://hachion.co/coursedetails/";
+		}
+
+		try {
+			// Step 1: decode (same as decodeURIComponent)
+			String decoded = java.net.URLDecoder.decode(courseName, java.nio.charset.StandardCharsets.UTF_8);
+
+			// Step 2: apply SAME regex logic as frontend
+			decoded = decoded.replaceAll("---+", " - ").replaceAll("\\b([a-zA-Z]{2,3})-(\\d{3})\\b", "$1@@$2")
+					.replaceAll("[-_]+", " ").replaceAll("@@", "-").replaceAll("\\s+", " ").trim().toLowerCase();
+
+			// Step 3: convert back to slug (URL format)
+			String slug = decoded.replaceAll("\\s+", "-"); // same frontend routing expectation
+
+			return "https://hachion.co/coursedetails/" + slug;
+
+		} catch (Exception e) {
+			return "https://hachion.co/coursedetails/" + courseName.toLowerCase();
+		}
+	}
+
+	private String getCurriculumUrl(String courseName) {
+
+//		String filePath = curriculumRepository.findCurriculumByCourseName(courseName);
+		List<String> filePaths = curriculumRepository.findCurriculumByCourseName(courseName);
+
+		String filePath = (filePaths != null && !filePaths.isEmpty()) ? filePaths.get(0) : null;
+		if (filePath == null || filePath.isEmpty()) {
+			return "https://hachion.co";
+		}
+
+		String baseUrl = "https://api.test.hachion.co/uploads/prod/curriculum/";
+
+		// Split folder + file name
+		int lastSlash = filePath.lastIndexOf("/");
+
+		String folder = filePath.substring(0, lastSlash + 1); // pdfs/
+		String fileName = filePath.substring(lastSlash + 1); // actual file
+
+		// Encode only file name
+		String encodedFileName = java.net.URLEncoder.encode(fileName, java.nio.charset.StandardCharsets.UTF_8)
+				.replace("+", "%20");
+
+		return baseUrl + folder + encodedFileName;
+	}
+
+	public void sendDynamicEmail(String to, String subject, String body) throws MessagingException {
+
+		MimeMessage message = mailSender.createMimeMessage();
+		MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+		helper.setTo(to);
+		helper.setSubject(subject);
+		helper.setText(body.replace("\n", "<br>"), true);
+
+		mailSender.send(message);
+	}
+
+	public void sendDynamicEmailWithCC(String to, String cc, String subject, String body) throws MessagingException {
+
+		MimeMessage message = mailSender.createMimeMessage();
+		MimeMessageHelper helper = new MimeMessageHelper(message, true);
+
+		helper.setTo(to);
+
+		if (cc != null && !cc.isEmpty()) {
+			helper.setCc(cc);
+		}
+
+		helper.setSubject(subject);
+//	    helper.setText(body.replace("\n", "<br>"), true);
+		helper.setText(body, true);
+
+		mailSender.send(message);
+	}
+
+//	public void sendUnsubscribeConfirmation(String email, String userName) {
+//
+//		try {
+//
+//			String greeting;
+//
+//			if (userName != null && !userName.trim().isEmpty()) {
+//				greeting = "Hi " + userName + ",";
+//			} else {
+//				greeting = "Hi,";
+//			}
+//
+//			String subject = "You’ve Been Unsubscribed from Hachion Updates";
+//
+//			String body = """
+//					%s
+//
+//					We’ve received your request to unsubscribe from Hachion updates, and you’ve been successfully removed from our mailing list.
+//
+//					We’re sorry to see you go. At Hachion, our goal is to share valuable insights, practical learning resources, and career-focused training to help you stay ahead. If our emails didn’t meet your expectations, we truly appreciate your time and would love to improve.
+//
+//					If you ever wish to reconnect, you’re always welcome back to explore new courses and updates with us.
+//
+//					In case this was unintentional, or you’d like to manage your preferences instead, you can re-subscribe anytime.
+//
+//					Thank you for being a part of Hachion. Wishing you continued success in your learning journey.
+//
+//					Warm regards,
+//					The Hachion Team
+//					"""
+//					.formatted(greeting);
+//
+//			sendSimpleEmail(email, subject, body);
+//
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+	public void sendUnsubscribeConfirmation(String email, String userName) {
+
+		try {
+
+			String greeting;
+
+			if (userName != null 
+					&& !userName.trim().isEmpty()
+					&& !"null".equalsIgnoreCase(userName.trim())) {
+
+				greeting = "Hi " + userName + ",";
+			} else {
+				greeting = "Hi,";
+			}
+
+			String subject = "You’ve Been Unsubscribed from Hachion Updates";
+
+			String dynamicContent = greeting + """
+
+
+				We’ve received your request to unsubscribe from Hachion updates, and you’ve been successfully removed from our mailing list.
+
+We’re sorry to see you go. At Hachion, our goal is to share valuable insights, practical learning resources, and career-focused training to help you stay ahead. If our emails didn’t meet your expectations, we truly appreciate your time and would love to improve.
+
+If you ever wish to reconnect, you’re always welcome back to explore new courses and updates with us.
+
+In case this was unintentional, or you’d like to manage your preferences instead, you can re-subscribe anytime.
+
+Thank you for being a part of Hachion. Wishing you continued success in your learning journey.
+
+					Warm regards,
+					The Hachion Team
+					""";
+
+			String htmlBody = commonEmailTemplateService.buildEmailTemplate(userName, dynamicContent);
+
+			sendHtmlEmail(email, subject, htmlBody);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public void sendHtmlEmail(String to, String subject, String htmlBody) {
+
+		try {
+
+			MimeMessage message = mailSender.createMimeMessage();
+
+			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+			helper.setTo(to);
+			helper.setSubject(subject);
+			helper.setText(htmlBody, true);
+
+			mailSender.send(message);
+
+			System.out.println("✅ HTML Email Sent Successfully to: " + to);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	public void sendSimpleEmail(String to, String subject, String body) {
+
+		try {
+
+			SimpleMailMessage message = new SimpleMailMessage();
+
+			message.setTo(to);
+			message.setSubject(subject);
+			message.setText(body);
+
+			mailSender.send(message);
+
+			System.out.println("✅ Unsubscribe confirmation email sent to: " + to);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+public void sendEmailForRegisterOffline(String toEmail, String tempPassword, String studentFullName, String coordinator)
+			throws MessagingException {
+		try {
+
+			String userName = (studentFullName != null && studentFullName.contains(" ")) ? studentFullName.split(" ")[0]
+					: studentFullName;
+
+			String safeUserName = userName != null ? userName : "Student";
+			String safeEmail = toEmail != null ? toEmail : "";
+			String safePassword = tempPassword != null ? tempPassword : "Hach@123";
+
+			String currentYear = String.valueOf(java.time.LocalDate.now().getYear());
+
+//			ClassPathResource resource = new ClassPathResource("templates/register_offline_students_email.html");
+//			String htmlContent = Files.readString(resource.getFile().toPath(), StandardCharsets.UTF_8);
+
+			ClassPathResource resource = new ClassPathResource("templates/register_offline_students_email.html");
+			String htmlContent;
+			try (InputStream inputStream = resource.getInputStream()) {
+				htmlContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+			}
+
+			htmlContent = htmlContent.replace("[Student First Name]", safeUserName)
+					.replace("[Student Email]", safeEmail).replace("Hach@123", safePassword)
+					.replace("[Year]", currentYear);
+
+			MimeMessage mimeMessage = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+			helper.setTo(toEmail);
+//			helper.setCc("trainings@hachion.co");
+			  if (coordinator != null &&
+		                !coordinator.trim().isEmpty()) {
+
+		            Optional<Employee> employeeOptional =
+		                    employeeRepository
+		                            .findByNameIgnoreCase(coordinator);
+
+		            if (employeeOptional.isPresent()) {
+
+		                String coordinatorEmail =
+		                        employeeOptional.get().getEmail();
+
+		                if (coordinatorEmail != null &&
+		                        !coordinatorEmail.trim().isEmpty()) {
+
+		                    helper.setCc(coordinatorEmail);
+		                }
+		            }
+		        }
+			helper.setSubject("Welcome to Hachion");
+			helper.setText(htmlContent, true);
+
+			helper.addInline("hachion-logo", new ClassPathResource("templates/logo.png"));
+
+			mailSender.send(mimeMessage);
+
+		} catch (Exception e) {
+			throw new MessagingException("Failed to send welcome email", e);
+		}
 	}
 
 }

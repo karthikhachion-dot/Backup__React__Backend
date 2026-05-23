@@ -31,6 +31,13 @@
 	<properties>
 		<java.version>21</java.version>
 	</properties>
+	<repositories>
+    <repository>
+        <id>google</id>
+        <name>Google Maven Repository</name>
+        <url>https://maven.google.com</url>
+    </repository>
+</repositories>
 	<dependencies>
 
 		<dependency>
@@ -39,21 +46,14 @@
 			<version>2.13.0</version> <!-- Use the latest version available -->
 		</dependency>
 		
-		<dependency>
-    <groupId>com.google.api-client</groupId>
-    <artifactId>google-api-client</artifactId>
-    <version>2.2.0</version>
-</dependency>
+	
 
 <dependency>
     <groupId>com.google.http-client</groupId>
     <artifactId>google-http-client-jackson2</artifactId>
     <version>1.43.3</version>
 </dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-		</dependency>
+		
 	<dependency>
   <groupId>com.twilio.sdk</groupId>
   <artifactId>twilio</artifactId>
@@ -64,7 +64,31 @@
     <artifactId>pdfbox</artifactId>
     <version>2.0.30</version>
 </dependency>
+ <dependency>
+        <groupId>com.google.api-client</groupId>
+        <artifactId>google-api-client</artifactId>
+        <version>2.2.0</version>
+    </dependency>
 
+   <dependency>
+    <groupId>com.google.apis</groupId>
+    <artifactId>google-api-services-drive</artifactId>
+    <version>v3-rev20230822-2.0.0</version>
+</dependency>
+
+<dependency>
+    <groupId>com.google.apis</groupId>
+    <artifactId>google-api-services-classroom</artifactId>
+    <version>v1-rev20260310-2.0.0</version>
+</dependency>
+
+
+    <!-- Auth -->
+    <dependency>
+        <groupId>com.google.auth</groupId>
+        <artifactId>google-auth-library-oauth2-http</artifactId>
+        <version>1.19.0</version>
+    </dependency>
 <dependency>
   <groupId>org.json</groupId>
   <artifactId>json</artifactId>
@@ -110,11 +134,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-<dependency>
-    <groupId>com.fasterxml.jackson.core</groupId>
-    <artifactId>jackson-databind</artifactId>
-    <version>2.12.3</version>
-</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -148,10 +168,7 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jpa</artifactId>
-		</dependency>
+		
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
@@ -170,10 +187,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
+		
 		<dependency>
 			<groupId>org.hibernate.validator</groupId>
 			<artifactId>hibernate-validator</artifactId>

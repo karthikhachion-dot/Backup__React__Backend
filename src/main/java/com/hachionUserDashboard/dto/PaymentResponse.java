@@ -4,24 +4,25 @@ import java.util.List;
 
 public class PaymentResponse {
 
-    private Long paymentId;
-    private String studentId;
-    private String studentName;
-    private String email;
-    private String mobile;
-    private String courseName;
-    private Double courseFee;
-    private Integer tax;
-    private Integer discount;
-    private Integer noOfInstallments;
-    private Integer noOfDays;
-    private Double totalAmount;
-    private Double balancePay;
-    private String invoiceNumber;
-    private String status;
-    private String stopReminder;
+	private Long paymentId;
+	private String studentId;
+	private String studentName;
+	private String email;
+	private String mobile;
+	private String courseName;
+	private Double courseFee;
+	private Integer tax;
+	private Integer discount;
+	private Integer noOfInstallments;
+	private Integer noOfDays;
+	private Double totalAmount;
+	private Double balancePay;
+	private String invoiceNumber;
+	private String status;
+	private String stopReminder;
+	private String currency;
 
-    private List<PaymentInstallmentResponse> paymentInstallmentsResponse;
+	private List<PaymentInstallmentResponse> paymentInstallmentsResponse;
 
 	public Long getPaymentId() {
 		return paymentId;
@@ -159,13 +160,12 @@ public class PaymentResponse {
 		this.stopReminder = stopReminder;
 	}
 
-	public List<PaymentInstallmentResponse> getPaymentInstallmentsResponse() {
-		return paymentInstallmentsResponse;
+	public String getCurrency() {
+		return currency;
 	}
 
-	public void setPaymentInstallmentsResponse(List<PaymentInstallmentResponse> paymentInstallmentsResponse) {
-		this.paymentInstallmentsResponse = paymentInstallmentsResponse;
+	public void setCurrency(String currency) {
+		this.currency = currency;
 	}
 
-    
 }

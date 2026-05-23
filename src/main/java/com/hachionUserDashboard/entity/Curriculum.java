@@ -20,10 +20,10 @@ public class Curriculum {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int curriculum_id;
 
-	@Column
+	@Column(nullable = false)
 	private String category_name;
 
-	@Column
+	@Column(nullable = false)
 	private String course_name;
 
 	@Column

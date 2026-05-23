@@ -20,13 +20,13 @@ public class Blogs {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int id;
 
-	@Column
+	@Column(nullable = false)
 	private String category_name;
 
-	@Column
+	@Column(nullable = false)
 	private String title;
 
-	@Column
+	@Column(nullable = false)
 	private String author;
 
 	@Column(name = "author_image")
@@ -189,6 +189,5 @@ public class Blogs {
 	public void setAuthorImage(String authorImage) {
 		this.authorImage = authorImage;
 	}
-
 
 }

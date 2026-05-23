@@ -8,7 +8,10 @@ public class BlogInquiryRequest {
 	private String query;
 	private String blogTitle;
 	private String timestamp;
-
+	private String timeZone;
+	private String country;
+	private String whatsapp;
+	
 	public String getName() {
 		return name;
 	}
@@ -55,6 +58,30 @@ public class BlogInquiryRequest {
 
 	public void setTimestamp(String timestamp) {
 		this.timestamp = timestamp;
+	}
+
+	public String getTimeZone() {
+		return timeZone;
+	}
+
+	public void setTimeZone(String timeZone) {
+		this.timeZone = timeZone;
+	}
+
+	public String getCountry() {
+		return country;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
+	}
+
+	public String getWhatsapp() {
+		return whatsapp;
+	}
+
+	public void setWhatsapp(String whatsapp) {
+		this.whatsapp = whatsapp;
 	}
 
 }

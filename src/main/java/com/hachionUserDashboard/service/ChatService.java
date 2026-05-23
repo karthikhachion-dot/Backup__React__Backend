@@ -131,7 +131,7 @@ public class ChatService {
 			if (allWordsPresent) {
 				
 				String courseSlug = normalizedCourse.replaceAll("\\s+", "-");
-				String courseLink = "http://localhost:3000/coursedetails/" + courseSlug;
+				String courseLink = "https://hachion.co/courses/" + courseSlug;
 				return "🔗 This is the course navigation link. Please click below to view more: \n👉 " + courseLink;
 			}
 		}

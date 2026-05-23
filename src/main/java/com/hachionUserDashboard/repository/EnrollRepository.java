@@ -103,10 +103,50 @@ public interface EnrollRepository extends JpaRepository<Enroll, Integer> {
 	@Modifying
 	@Transactional
 	@Query(value = "UPDATE enroll SET amount = COALESCE(amount, 0) + :amount WHERE student_id = :studentId AND course_name = :courseName AND batch_id = :batchId", nativeQuery = true)
-	int updateAmountByStudentCourseBatchNative(@Param("amount") Double amount, @Param("studentId") String studentId,
+	int incrementAmountByStudentCourseBatch(@Param("amount") Double amount, @Param("studentId") String studentId,
 			@Param("courseName") String courseName, @Param("batchId") String batchId);
-	
+
 	@Query(value = "SELECT mode FROM enroll WHERE student_id = :studentId AND course_name = :courseName ORDER BY id DESC LIMIT 1", nativeQuery = true)
 	String findModeByStudentAndCourse(@Param("studentId") String studentId, @Param("courseName") String courseName);
 
+	@Modifying
+	@Transactional
+	@Query(value = "UPDATE enroll SET student_status = :studentStatus " + "WHERE student_id = :studentId "
+			+ "AND batch_id = :batchId " + "AND course_name = :courseName", nativeQuery = true)
+	int updateStudentStatus(@Param("studentStatus") String studentStatus, @Param("studentId") String studentId,
+			@Param("batchId") String batchId, @Param("courseName") String courseName);
+
+	@Query(value = """
+			    SELECT *
+			    FROM enroll
+			    WHERE student_id = :studentId
+			      AND email = :email
+			      AND LOWER(course_name) = LOWER(:courseName)
+			    ORDER BY id DESC
+			    LIMIT 1
+			""", nativeQuery = true)
+	Enroll findLatestEnroll(@Param("studentId") String studentId, @Param("email") String email,
+			@Param("courseName") String courseName);
+
+	@Query(value = """
+			SELECT *
+			FROM enroll
+			WHERE enrollment_status = 'Offline'
+			ORDER BY id DESC
+			""", nativeQuery = true)
+	List<Enroll> getOfflineEnrollments();
+	
+	@Query(value = """
+		    SELECT COUNT(*) > 0
+		    FROM enroll
+		    WHERE email = :email
+		      AND course_name = :courseName
+		      AND batch_id = :batchId
+		      
+		""", nativeQuery = true)
+	Long checkDuplicateOfflineEnrollment(
+		        @Param("email") String email,
+		        @Param("courseName") String courseName,
+		        @Param("batchId") String batchId
+		);
 }

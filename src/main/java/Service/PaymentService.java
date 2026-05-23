@@ -1,13 +1,16 @@
 package Service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.ui.Model;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.hachionUserDashboard.dto.PaymentRequest;
 import com.hachionUserDashboard.dto.PaymentResponse;
+import com.hachionUserDashboard.dto.PaymentSummaryDTO;
 import com.hachionUserDashboard.dto.StudentCourseInfo;
 
 public interface PaymentService {
@@ -21,7 +24,7 @@ public interface PaymentService {
 
 	public StudentCourseInfo getStudentCourseInfo(String studentId, String email, String mobile);
 
-	public Double getAmountByCourseName(String courseName);
+//	public Double getAmountByCourseName(String courseName);
 
 	public void deletePaymentById(Long id);
 
@@ -32,10 +35,8 @@ public interface PaymentService {
 	public String generateInvoice(PaymentRequest paymentRequest, Model model);
 
 //	String generateInvoiceBeforePayment(PaymentRequest paymentRequest, Model model);
-	
-	public void sendReminderEmail(PaymentRequest paymentRequest);
 
-	
+	public void sendReminderEmail(PaymentRequest paymentRequest);
 
 	String generateInvoiceForPaypal(PaymentRequest paymentRequest, Model model);
 
@@ -44,7 +45,11 @@ public interface PaymentService {
 	String generateInvoiceForOnline(PaymentRequest paymentRequest, Model model);
 
 //	public String generateInvoiceBeforePayment(PaymentRequest paymentRequest, Model model)
+
+	public Map<String, Double> getAmountsByCourseName(String courseName);
 	
-	
+	public int updateStopReminder(String stopReminder, String courseName, String studentId, String email);
+
+	public List<PaymentSummaryDTO> getPaymentSummary(LocalDate start, LocalDate end);
 
 }

@@ -35,11 +35,15 @@ import org.springframework.web.bind.annotation.RestController;
 import com.hachionUserDashboard.dto.EnrollPaymentUpdateRequest;
 import com.hachionUserDashboard.dto.EnrollRequest;
 import com.hachionUserDashboard.dto.EnrollmentSummaryDto;
+import com.hachionUserDashboard.dto.OfflineEnrollRequest;
+import com.hachionUserDashboard.entity.CourseSchedule;
 import com.hachionUserDashboard.entity.Enroll;
+import com.hachionUserDashboard.entity.RegisterStudent;
 import com.hachionUserDashboard.repository.CourseScheduleRepository;
 import com.hachionUserDashboard.repository.CurriculumRepository;
 import com.hachionUserDashboard.repository.EnrollRepository;
 import com.hachionUserDashboard.repository.PaymentTransactionRepository;
+import com.hachionUserDashboard.repository.RegisterStudentRepository;
 import com.hachionUserDashboard.repository.TrainerRepository;
 import com.hachionUserDashboard.service.EmailService;
 import com.hachionUserDashboard.service.WebhookSenderService;
@@ -79,6 +83,12 @@ public class EnrollController {
 	@Autowired
 	private PaymentTransactionRepository paymentTransactionRepository;
 
+	@Autowired
+	private RegisterStudentRepository registerStudentRepository;
+
+	@Autowired
+	private CourseScheduleRepository courseScheduleRepository;
+
 	@GetMapping("/enroll/{id}")
 	public ResponseEntity<Enroll> getEnroll(@PathVariable Integer id) {
 		return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
@@ -100,10 +110,6 @@ public class EnrollController {
 		int existingCount = repo.countByStudentCourseBatchAndModeLiveClass(requestEnroll.getStudentId(),
 				requestEnroll.getCourse_name(), requestEnroll.getBatchId());
 
-//		if (existingCount > 0) {
-//			return ResponseEntity.status(HttpStatus.CONFLICT)
-//					.body("This enrollment record already exists for Live Class in the database.");
-//		}
 		if (existingCount > 0) {
 			return ResponseEntity.status(HttpStatus.CONFLICT).body("You are already enrolled for this batch.");
 		}
@@ -123,6 +129,7 @@ public class EnrollController {
 		enroll.setBatchId(requestEnroll.getBatchId());
 		enroll.setDate(LocalDate.now());
 		enroll.setPaymentStatus("Pending Payment");
+		enroll.setEnrollmentStatus("Online");
 
 		LocalDate date = LocalDate.parse(requestEnroll.getEnroll_date());
 		String dayOfWeek = date.getDayOfWeek().getDisplayName(TextStyle.FULL, Locale.ENGLISH);
@@ -184,13 +191,6 @@ public class EnrollController {
 						null, null, null, null, null, null, null, technologySlug);
 			}
 		}
-		if ("Self-Paced Learning".equalsIgnoreCase(requestEnroll.getMode())) {
-
-			String todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MMMM-yyyy"));
-
-			emailService.sendEmailForEnrollForSelfPaced(requestEnroll.getEmail(), requestEnroll.getName(),
-					requestEnroll.getCourse_name(), todayDate);
-		}
 
 		if (requestEnroll.isSendWhatsApp()) {
 			if ("Live Class".equalsIgnoreCase(requestEnroll.getMode())) {
@@ -200,8 +200,15 @@ public class EnrollController {
 			} else if ("Self-Paced Learning".equalsIgnoreCase(requestEnroll.getMode())) {
 				whatsAppService.sendSelfPacedEnrollmentConfirmed(enroll);
 			}
-
 		}
+		if ("Self-Paced Learning".equalsIgnoreCase(requestEnroll.getMode())) {
+
+			String todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MMMM-yyyy"));
+
+			emailService.sendEmailForEnrollForSelfPaced(requestEnroll.getEmail(), requestEnroll.getName(),
+					requestEnroll.getCourse_name(), todayDate);
+		}
+
 		if (requestEnroll.isSendText()) {
 			whatsAppService.sendEnrollmentSms(requestEnroll);
 		}
@@ -594,6 +601,22 @@ public class EnrollController {
 		return ResponseEntity.ok(Map.of("enrolled", enrolled, "count", count == null ? 0 : count, "amount", amount));
 	}
 
+	@GetMapping("/enroll/is-enrolled-for-installments")
+	public ResponseEntity<?> isEnrolledForBatchForInstallmets(@RequestParam String studentId,
+			@RequestParam String courseName, @RequestParam String batchId) {
+
+		Long count = repo.countEnrollments(studentId, courseName, batchId);
+		boolean enrolled = (count != null && count > 0);
+
+		Double amount = 0.0;
+		if (enrolled) {
+			Double dbAmount = repo.findLatestAmount(studentId, courseName, batchId);
+			amount = dbAmount != null ? dbAmount : 0.0;
+		}
+
+		return ResponseEntity.ok(Map.of("enrolled", enrolled, "count", count == null ? 0 : count, "amount", amount));
+	}
+
 	@PostMapping("/enroll/resend-email-by-session")
 	public ResponseEntity<?> resendEnrollEmailBySession(@RequestBody Map<String, String> request)
 			throws MessagingException {
@@ -671,40 +694,138 @@ public class EnrollController {
 
 		return ResponseEntity.ok(Map.of("enrolled", enrolled, "count", count == null ? 0 : count));
 	}
+
 	@GetMapping("/enroll/installment-progress")
-	public ResponseEntity<?> getInstallmentUiStatus(
-	        @RequestParam String studentId,
-	        @RequestParam String courseName,
-	        @RequestParam String batchId) {
+	public ResponseEntity<?> getInstallmentUiStatus(@RequestParam String studentId, @RequestParam String courseName,
+			@RequestParam String batchId) {
 
-	    List<Object[]> rows = paymentTransactionRepository
-	            .findInstallmentUiStatus(studentId, courseName, batchId);
+		List<Object[]> rows = paymentTransactionRepository.findInstallmentUiStatus(studentId, courseName, batchId);
 
-	    int checkboxClicked = 0;
-	    int numberOfInstallments = 0;
-	    String requestStatus = null;
+		int checkboxClicked = 0;
+		int numberOfInstallments = 0;
+		String requestStatus = null;
 
-	    if (rows != null && !rows.isEmpty()) {
-	        Object[] row = rows.get(0);
+		if (rows != null && !rows.isEmpty()) {
+			Object[] row = rows.get(0);
 
-	        checkboxClicked = row[0] != null ? ((Number) row[0]).intValue() : 0;
-	        numberOfInstallments = row[1] != null ? ((Number) row[1]).intValue() : 0;
-	        requestStatus = row[2] != null ? row[2].toString() : null;
-	    }
+			checkboxClicked = row[0] != null ? ((Number) row[0]).intValue() : 0;
+			numberOfInstallments = row[1] != null ? ((Number) row[1]).intValue() : 0;
+			requestStatus = row[2] != null ? row[2].toString() : null;
+		}
 
-	    boolean allInstallmentsPaid =
-	            numberOfInstallments > 0 && checkboxClicked >= numberOfInstallments;
+		boolean allInstallmentsPaid = numberOfInstallments > 0 && checkboxClicked >= numberOfInstallments;
 
-	    return ResponseEntity.ok(
-	        Map.of(
-	            "studentId", studentId,
-	            "courseName", courseName,
-	            "batchId", batchId,
-	            "checkboxClicked", checkboxClicked,
-	            "numberOfInstallments", numberOfInstallments,
-	            "requestStatus", requestStatus,
-	            "allInstallmentsPaid", allInstallmentsPaid
-	        )
-	    );
+		return ResponseEntity.ok(Map.of("studentId", studentId, "courseName", courseName, "batchId", batchId,
+				"checkboxClicked", checkboxClicked, "numberOfInstallments", numberOfInstallments, "requestStatus",
+				requestStatus, "allInstallmentsPaid", allInstallmentsPaid));
+	}
+
+	@PutMapping("/enroll/update-status")
+	public ResponseEntity<String> updateStudentStatus(@RequestParam String studentId, @RequestParam String batchId,
+			@RequestParam String courseName, @RequestParam String studentStatus) {
+
+		int updated = repo.updateStudentStatus(studentStatus, studentId, batchId, courseName);
+
+		if (updated == 0) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No record found to update");
+		}
+
+		return ResponseEntity.ok("Student status updated successfully");
+	}
+
+	@PostMapping("/offline-enroll/add")
+	public ResponseEntity<?> addOfflineEnroll(@RequestBody OfflineEnrollRequest request) {
+
+		Optional<RegisterStudent> studentOptional = registerStudentRepository.getStudentByEmail(request.getEmail());
+
+		if (studentOptional.isEmpty()) {
+			return ResponseEntity.badRequest().body("Student not found");
+		}
+
+		RegisterStudent student = studentOptional.get();
+
+		CourseSchedule schedule = courseScheduleRepository.getScheduleDetails(request.getCourse_name(),
+				request.getBatch_id());
+
+		Long alreadyExists = repo.checkDuplicateOfflineEnrollment(request.getEmail(), request.getCourse_name(),
+				request.getBatch_id()
+
+		);
+		if (alreadyExists > 0) {
+
+		    return ResponseEntity.badRequest().body(
+		            "Student already enrolled for this course and batch."
+		    );
+		}
+		if (schedule == null) {
+			return ResponseEntity.badRequest().body("Schedule not found");
+		}
+
+		Enroll enroll = new Enroll();
+
+		enroll.setStudentId(student.getStudentId());
+		enroll.setName(student.getUserName());
+		enroll.setMobile(student.getMobile());
+
+		enroll.setEmail(request.getEmail());
+
+		enroll.setCourse_name(request.getCourse_name());
+
+		enroll.setEnroll_date(schedule.getSchedule_date());
+
+		enroll.setBatchId(request.getBatch_id());
+
+		enroll.setTrainer(schedule.getTrainer_name());
+
+		enroll.setMeeting_link(schedule.getMeeting_link());
+
+//		enroll.setTime(schedule.getSchedule_time());
+		String timeWithTimezone = schedule.getSchedule_time() + " " + student.getTime_zone();
+
+		enroll.setTime(timeWithTimezone);
+
+		enroll.setAmount(0.0);
+
+		enroll.setPaymentStatus("Pending");
+
+		enroll.setEnrollmentStatus("Offline");
+
+		enroll.setDate(LocalDate.now());
+		if (request.getBatch_id().startsWith("LCL")) {
+
+			enroll.setMode("Live Class");
+
+		} else if (request.getBatch_id().startsWith("LDM")) {
+
+			enroll.setMode("Live Demo");
+
+		} else if (request.getBatch_id().startsWith("SPL")) {
+
+			enroll.setMode("Self-Paced Learning");
+
+		} else {
+
+			enroll.setMode("Offline");
+		}
+
+		repo.save(enroll);
+
+		return ResponseEntity.ok("Offline enrollment added successfully");
+	}
+
+	@GetMapping("/offline-enrollments")
+	public ResponseEntity<?> getOfflineEnrollments() {
+
+		List<Enroll> enrollments = repo.getOfflineEnrollments();
+
+		return ResponseEntity.ok(enrollments);
+	}
+
+	@DeleteMapping("/offline-enroll/delete/{id}")
+	public ResponseEntity<?> deleteOfflineEnrollment(@PathVariable int id) {
+
+		repo.deleteById(id);
+
+		return ResponseEntity.ok("Offline Enrollment Deleted Successfully");
 	}
 }

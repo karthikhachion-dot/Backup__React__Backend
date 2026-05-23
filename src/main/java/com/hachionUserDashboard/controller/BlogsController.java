@@ -36,6 +36,7 @@ import com.hachionUserDashboard.dto.BlogInquiryRequest;
 import com.hachionUserDashboard.entity.Blogs;
 import com.hachionUserDashboard.exception.ResourceNotFoundException;
 import com.hachionUserDashboard.repository.BlogRepository;
+import com.hachionUserDashboard.service.BlogService;
 import com.hachionUserDashboard.service.WebhookSenderService;
 
 import jakarta.annotation.PostConstruct;
@@ -47,15 +48,18 @@ public class BlogsController {
 
 	@Autowired
 	private BlogRepository repo;
+	
 
 	@Value("${file.upload-dir}")
 	private String upload;
 
 	private String uploadDir;
-	
+
 	@Autowired
 	private WebhookSenderService webhookSenderService;
 	
+	@Autowired
+	private BlogService blogService;
 
 	@PostConstruct
 	public void initUploadDir() {
@@ -169,14 +173,14 @@ public class BlogsController {
 				String shortTitle = updatedBlog.getShortTitle();
 
 				if (!shortTitle.matches("^[A-Za-z ]+$")) {
-				    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				            .body("ShortTitle must contain only alphabets and spaces. Numbers, hyphens (-), and special characters are not allowed.");
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+							"ShortTitle must contain only alphabets and spaces. Numbers, hyphens (-), and special characters are not allowed.");
 				}
 
 				// Duplicate check excluding current blog
 				if (repo.existsByShortTitleAndIdNot(shortTitle, id)) {
-				    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				            .body("ShortTitle already exists in the system");
+					return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+							.body("ShortTitle already exists in the system");
 				}
 
 				blog.setCategory_name(updatedBlog.getCategory_name());
@@ -259,7 +263,6 @@ public class BlogsController {
 			}
 		}).orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Blog not found with ID: " + id));
 	}
-
 
 	@GetMapping("/blog/download/{type}/{filename}")
 	public ResponseEntity<Resource> downloadFile(@PathVariable String type, @PathVariable String filename) {
@@ -393,6 +396,7 @@ public class BlogsController {
 		List<Object[]> blogs = repo.findByCategoriesForList(categories);
 		return ResponseEntity.ok(blogs);
 	}
+
 	@GetMapping("/blog/slug/{slug}")
 	public ResponseEntity<Blogs> getBlogBySlug(@PathVariable String slug) {
 
@@ -426,6 +430,7 @@ public class BlogsController {
 	public ResponseEntity<?> handleInquiry(@RequestBody BlogInquiryRequest request) {
 
 		try {
+			blogService.saveBlogInquiry(request);
 			webhookSenderService.sendToBlogInquiryForm(request);
 
 			return ResponseEntity.ok("Sent to Google Chat successfully");

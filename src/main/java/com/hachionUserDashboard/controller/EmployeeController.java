@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -34,6 +35,8 @@ public class EmployeeController {
 		} catch (IOException ioe) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body("Error saving image: " + ioe.getMessage());
+		} catch (RuntimeException re) {
+			return ResponseEntity.badRequest().body(re.getMessage());
 		} catch (Exception e) {
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 					.body("Error adding employee: " + e.getMessage());
@@ -84,5 +87,42 @@ public class EmployeeController {
 		} else {
 			return ResponseEntity.ok(employeeService.getEmployeesByDepartment(department));
 		}
+	}
+
+//	@GetMapping("/by-departments")
+//	public List<Employee> getEmployeesByDepartments(@RequestParam List<String> departments) {
+//
+//		return employeeService.getEmployeesByDepartments(departments);
+//	}
+
+	@GetMapping("/by-departments")
+	public List<String> getEmployeeNamesByDepartments() {
+
+		List<String> departments = Arrays.asList("Business", "SEO");
+
+		return employeeService.getEmployeeNamesByDepartments(departments);
+	}
+
+	@GetMapping("/recording-folder")
+	public List<String> getRecordingFolder(@RequestParam String name) {
+		return employeeService.getRecordingFoldersByName(name);
+	}
+
+	@GetMapping("/google-form-urls")
+	public ResponseEntity<List<String>> getGoogleFormUrls() {
+
+		List<String> urls = employeeService.getUniqueGoogleFormUrls();
+
+		return ResponseEntity.ok(urls);
+	}
+
+	@GetMapping("/enteredBy")
+	public List<String> getAllEmployeeNames() {
+		return employeeService.getAllEmployeeNames();
+	}
+
+	@GetMapping("/seo-team")
+	public List<String> getSeoTeamNames() {
+		return employeeService.getSeoTeamNames();
 	}
 }

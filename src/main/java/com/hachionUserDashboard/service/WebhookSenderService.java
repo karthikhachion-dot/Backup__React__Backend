@@ -1,8 +1,5 @@
 package com.hachionUserDashboard.service;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -18,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 import com.hachionUserDashboard.dto.AskQueryWebhookRequest;
 import com.hachionUserDashboard.dto.BlogInquiryRequest;
 import com.hachionUserDashboard.dto.TalkToOurAdvisorRequest;
+import com.hachionUserDashboard.dto.UnsubscribeRequest;
 import com.hachionUserDashboard.entity.Enroll;
 import com.hachionUserDashboard.entity.FaqQuery;
 import com.hachionUserDashboard.entity.InstructorApplication;
@@ -42,17 +40,23 @@ public class WebhookSenderService {
 
 	private static final String WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQA6ewjlUA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=6Ky6FWJuoONB7vBZuwXqNsAb9uaT_Lkcegj5cF25_2c";
 
+	// Training leads
 	private static final String ASK_A_QUERY = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
+
+	// Business space
 	private static final String REQUEST_INSTALLMENT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAAAQsgUn_0/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=NanGSY8MMpEk59rTvI1L_GW9dKRYQqySb22w0L8qm7w";
 
+	// Training leads
 	private static final String CORPORTATE_TRAINIG = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
+
+//	private static final String REMINDER_WEBHOOK_URL= "https://chat.googleapis.com/v1/spaces/AAQA8ccVOlE/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=xlniHAkMsFirxdEnt45vibQWPuniiOxTCBJzZL9yImU";
 
 	// Trainer Hunt
 	private final String BECOME_INSTRUCTOR = "https://chat.googleapis.com/v1/spaces/AAQASCl2Z5o/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=a64MwaaFraJUGIVNL5kt7MgIwtFlJ-QeK8ZXK7dTOlw";
 
-	private final String BITLY_GOOGLE_FORM = "https://chat.googleapis.com/v1/spaces/AAQA6q0K3yw/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=OxbGZ_JPB92-DKb221-lIQ42JGSN4LUEmyvWfSxXV2Q";
+	private final String BLOG_INQUIRY_FORM = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
 
-	private final String BLOG_INQUIRY_FORM = "https://chat.googleapis.com/v1/spaces/AAQASCl2Z5o/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=a64MwaaFraJUGIVNL5kt7MgIwtFlJ-QeK8ZXK7dTOlw";
+	private final String UNSUBSCRIBE_FORM = "https://chat.googleapis.com/v1/spaces/AAQAiUTh2RA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=0VwA2Cv9RUWH-4881FKhu5gNe9N5Y5PBiC5knbRdjOU";
 	
 	public void sendRegistrationDetailsOnline(RegisterStudent student) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -461,8 +465,7 @@ public class WebhookSenderService {
 		HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
 		try {
-			restTemplate.postForEntity(REQUEST_INSTALLMENT_WEBHOOK_URL, entity, String.class); // or CONTACT_US webhook
-																								// URL
+			restTemplate.postForEntity(CORPORTATE_TRAINIG, entity, String.class); // or CONTACT_US webhook URL
 			System.out.println("✅ Contact Us Lead webhook sent successfully.");
 		} catch (Exception e) {
 			System.err.println("❌ Failed to send Contact Us Lead webhook: " + e.getMessage());
@@ -491,71 +494,6 @@ public class WebhookSenderService {
 		}
 	}
 
-	public void sendInstructorApplication(InstructorApplication app) {
-
-		String currentDate = java.time.LocalDate.now()
-				.format(java.time.format.DateTimeFormatter.ofPattern("MMM-dd-yyyy"));
-
-		String message = String.format(
-				"*📢 New Instructor Application*\n\n" + "*Date:* %s\n" + "*Name:* %s\n" + "*Email:* %s\n"
-						+ "*Mobile:* %s\n" + "*Location:* %s\n" + "*Skills:* %s\n" + "*Area:* %s\n"
-						+ "*Experience:* %s\n" + "*Mode:* %s\n" + "*Portfolio Link:* %s\n" + "*Comment:* %s",
-				currentDate, app.getName(), app.getEmail(), app.getMobile(), app.getLocation(), app.getSkill(),
-				app.getArea(), app.getExperience(), app.getMode(), app.getLink(), app.getComment());
-
-		Map<String, String> payload = new HashMap<>();
-		payload.put("text", message);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		HttpEntity<Map<String, String>> request = new HttpEntity<>(payload, headers);
-
-		restTemplate.postForEntity(BECOME_INSTRUCTOR, request, String.class);
-	}
-
-	public void sendMessage(String message) {
-		try {
-			URL url = new URL(BITLY_GOOGLE_FORM);
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-			conn.setRequestMethod("POST");
-			conn.setRequestProperty("Content-Type", "application/json");
-			conn.setDoOutput(true);
-
-			String json = "{ \"text\": \"" + message + "\" }";
-
-			try (OutputStream os = conn.getOutputStream()) {
-				os.write(json.getBytes("utf-8"));
-			}
-
-			conn.getResponseCode();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	public void sendToBlogInquiryForm(BlogInquiryRequest request) {
-
-		RestTemplate restTemplate = new RestTemplate();
-
-		String message = "🚀 *New Blog Inquiry*\n\n" + "*Name:* " + request.getName() + "\n" + "*Email:* "
-				+ request.getEmail() + "\n" + "*Phone:* " + request.getPhone() + "\n" + "*Course:* "
-				+ request.getBlogTitle() + "\n" + "*Query:* "
-				+ (request.getQuery() != null ? request.getQuery() : "N/A") + "\n" + "*Time:* "
-				+ request.getTimestamp();
-
-		Map<String, String> body = new HashMap<>();
-		body.put("text", message);
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
-
-		restTemplate.postForEntity(BLOG_INQUIRY_FORM, entity, String.class);
-	}
-	
 	public void sendStopReminderNotification(Payment payment) {
 
 		String message = String.format(
@@ -581,5 +519,127 @@ public class WebhookSenderService {
 		} catch (Exception e) {
 			System.err.println("❌ Failed to send Stop Reminder notification: " + e.getMessage());
 		}
+	}
+
+	public void sendInstructorApplication(InstructorApplication app) {
+
+		String currentDate = java.time.LocalDate.now()
+				.format(java.time.format.DateTimeFormatter.ofPattern("MMM-dd-yyyy"));
+
+		String message = String.format(
+				"*📢 New Instructor Application*\n\n" + "*Date:* %s\n" + "*Name:* %s\n" + "*Email:* %s\n"
+						+ "*Mobile:* %s\n" + "*Location:* %s\n" + "*Skills:* %s\n" + "*Area:* %s\n"
+						+ "*Experience:* %s\n" + "*Mode:* %s\n" + "*Portfolio Link:* %s\n" + "*Comment:* %s",
+				currentDate, app.getName(), app.getEmail(), app.getMobile(), app.getLocation(), app.getSkill(),
+				app.getArea(), app.getExperience(), app.getMode(), app.getLink(), app.getComment());
+
+		Map<String, String> payload = new HashMap<>();
+		payload.put("text", message);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<Map<String, String>> request = new HttpEntity<>(payload, headers);
+
+		restTemplate.postForEntity(BECOME_INSTRUCTOR, request, String.class);
+	}
+
+	public void sendToBlogInquiryForm(BlogInquiryRequest request) {
+
+		RestTemplate restTemplate = new RestTemplate();
+
+		String message = "🚀 *New Blog Inquiry*\n\n" + "*Name:* " + request.getName() + "\n" + "*Email:* "
+				+ request.getEmail() + "\n" + "*Phone:* " + request.getPhone() + "\n" + "*Course:* "
+				+ request.getBlogTitle() + "\n" + "*Query:* "
+				+ (request.getQuery() != null ? request.getQuery() : "N/A") + "\n" + "*Time:* "
+				+ request.getTimestamp();
+
+		Map<String, String> body = new HashMap<>();
+		body.put("text", message);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+
+		restTemplate.postForEntity(BLOG_INQUIRY_FORM, entity, String.class);
+	}
+	public void sendGoogleFormRegistrationDetails(RegisterStudent student, boolean isDuplicate) {
+
+	    String heading = isDuplicate
+	            ? "⚠️ *Duplicate Lead from %s!*"
+	            : "📢 *New Lead from %s!*";
+
+	    String message = String.format(
+	            heading + "\n\n" +
+	            "*Email:* %s\n" +
+	            "*Name:* %s\n" +
+	            "*Phone:* %s\n" +
+	            "*WhatsApp:* %s\n" +
+	            "*Course:* %s\n" +
+	            "*Country:* %s\n" +
+	            "*State:* %s",
+
+	            student.getSeoTeam() != null ? student.getSeoTeam() : "Unknown",
+
+	            student.getEmail(),
+	            student.getUserName(),
+	            student.getMobile(),
+	            student.getWhatsapp(),
+	            student.getCourse_name(),
+	            student.getCountry() != null ? student.getCountry() : "N/A",
+	            student.getStateCity() != null ? student.getStateCity() : "N/A"
+	    );
+
+	    HttpHeaders headers = new HttpHeaders();
+	    headers.setContentType(MediaType.APPLICATION_JSON);
+
+	    String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
+
+	    HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+
+	    try {
+	        restTemplate.postForEntity(ASK_A_QUERY, entity, String.class);
+	        System.out.println("✅ Webhook sent successfully.");
+	    } catch (Exception e) {
+	        System.err.println("❌ Failed to send webhook: " + e.getMessage());
+	    }
+	}
+	public void sendUnsubscribeNotification(UnsubscribeRequest request) {
+
+	    try {
+
+	        RestTemplate restTemplate = new RestTemplate();
+
+	        String message =
+	                "🚫 Hachion Unsubscribe Alert\n\n" +
+
+	                "👤 Name: " + request.getUserName() + "\n" +
+	                "📧 Email: " + request.getEmail() + "\n" +
+	                "📱 Mobile: " + request.getMobile() + "\n" +
+	                "🌍 Country: " + request.getCountry() + "\n" +
+	                "📝 Reason: " + request.getReason() + "\n" +
+	                "💬 Comments: " + request.getComments() + "\n" +
+	                "📅 Date: " + LocalDate.now()
+	                .format(DateTimeFormatter.ofPattern("MMM-dd-yyyy"));
+
+	        Map<String, String> body = new HashMap<>();
+	        body.put("text", message);
+
+	        HttpHeaders headers = new HttpHeaders();
+	        headers.setContentType(MediaType.APPLICATION_JSON);
+
+	        HttpEntity<Map<String, String>> entity =
+	                new HttpEntity<>(body, headers);
+
+	        restTemplate.postForEntity(
+	        		UNSUBSCRIBE_FORM,
+	                entity,
+	                String.class
+	        );
+
+	    } catch (Exception e) {
+	        e.printStackTrace();
+	    }
 	}
 }

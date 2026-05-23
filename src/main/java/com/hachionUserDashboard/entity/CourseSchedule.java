@@ -9,7 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 @Table(name = "schedule")
@@ -18,41 +17,54 @@ public class CourseSchedule {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int course_schedule_id;
 
-	@Column
+	@Column(nullable = false)
 	private String schedule_category_name;
 
-	@Column
+	@Column(nullable = false)
 	private String schedule_course_name;
 
-	@Column
+	@Column(nullable = false)
 	private String schedule_date;
 
 	@Column
 	private String schedule_week;
 
-	@Column
+	@Column(nullable = false)
 	private String schedule_time;
 
-	@Column
+	@Column(nullable = false)
 	private String schedule_duration;
 
-	@Column
+	@Column(nullable = false)
 	private String schedule_mode;
-	@Column
+	
+	@Column(nullable = false)
 	private String trainer_name;
-	@Column
+	
+	@Column(nullable = false)
 	private String created_date;
-	@Column
+	
+	@Column(nullable = false)
 	private String meeting_link;
 
-	@Column(name = "batch_id")
+	@Column(name = "batch_id", nullable = false)
 	private String batchId;
 
 	@Column(name = "is_active")
 	private Boolean isActive = true;
 
-	public CourseSchedule() {
-	}
+	@Column(name = "co-ordinator")
+	private String coordinator;
+
+	@Column(name = "recordings_folder_id")
+	private String recordingsFolderId;
+
+	@Column(name = "schedule_frequency")
+	private String scheduleFrequency;
+
+	@Column(name = "record_count")
+	private Integer recordCount = 0;
+
 
 	public String getMeeting_link() {
 		return meeting_link;
@@ -84,6 +96,9 @@ public class CourseSchedule {
 
 	public void setSchedule_course_name(String schedule_course_name) {
 		this.schedule_course_name = schedule_course_name;
+	}
+
+	public CourseSchedule() {
 	}
 
 	public String getSchedule_date() {
@@ -157,4 +172,37 @@ public class CourseSchedule {
 	public void setIsActive(Boolean isActive) {
 		this.isActive = isActive;
 	}
+
+	public String getCoordinator() {
+		return coordinator;
+	}
+
+	public void setCoordinator(String coordinator) {
+		this.coordinator = coordinator;
+	}
+
+	public String getRecordingsFolderId() {
+		return recordingsFolderId;
+	}
+
+	public void setRecordingsFolderId(String recordingsFolderId) {
+		this.recordingsFolderId = recordingsFolderId;
+	}
+
+	public String getScheduleFrequency() {
+		return scheduleFrequency;
+	}
+
+	public void setScheduleFrequency(String scheduleFrequency) {
+		this.scheduleFrequency = scheduleFrequency;
+	}
+
+	public Integer getRecordCount() {
+		return recordCount;
+	}
+
+	public void setRecordCount(Integer recordCount) {
+		this.recordCount = recordCount;
+	}
+
 }
