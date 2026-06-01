@@ -63,6 +63,7 @@ public class PaymentTransactionResponse {
 	private String mobile;
 	private LocalDate requestDate;
 
+	@Column(name = "coupon_code")
 	private String couponCode;
 
 	@OneToMany(mappedBy = "paymentTransaction", cascade = CascadeType.ALL, orphanRemoval = true)

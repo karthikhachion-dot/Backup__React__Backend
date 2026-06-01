@@ -59,7 +59,7 @@ public class QueryController {
 
 		repo.save(query);
 		sendQueryEmail(query);
-//        sendQueryToChat(query);
+	    sendQueryToChat(query);
 		webhookSenderService.sendContactUsLead(query);
 		return ResponseEntity.ok("Query Submitted successfully");
 	}

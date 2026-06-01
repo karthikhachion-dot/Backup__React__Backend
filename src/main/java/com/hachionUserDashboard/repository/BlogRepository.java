@@ -30,17 +30,25 @@ public interface BlogRepository extends JpaRepository<Blogs, Integer> {
 	        "ORDER BY category_name DESC, id DESC", nativeQuery = true)
 	List<Object[]> findByCategoriesForList(@Param("categories") List<String> categories);
 
-	@Query(value = """
-			    SELECT
-			        id,
-			        category_name,
-			        title,
-			        author,
-			        date
-			    FROM blogs
-			""", nativeQuery = true)
-	List<Object[]> findAllBlogColumns();
+//	@Query(value = """
+//			    SELECT
+//			        id,
+//			        category_name,
+//			        title,
+//			        author,
+//			        date
+//			    FROM blogs
+//			""", nativeQuery = true)
+//	List<Object[]> findAllBlogColumns();
 	
+	@Query(value = """
+            SELECT
+                category_name,
+                short_title
+            FROM blogs
+        """, nativeQuery = true)
+List<Object[]> findAllBlogColumns();
+
 	@Query(value = "SELECT * FROM blogs WHERE LOWER(REPLACE(title,' ','-')) = LOWER(:slug) LIMIT 1", nativeQuery = true)
 	Optional<Blogs> findBySlug(@Param("slug") String slug);
 
@@ -52,4 +60,5 @@ public interface BlogRepository extends JpaRepository<Blogs, Integer> {
 
 	@Query(value = "SELECT * FROM blogs WHERE short_title = :shortTitle", nativeQuery = true)
 	Optional<Blogs> findBlogByShortTitle(@Param("shortTitle") String shortTitle);
+
 }

@@ -36,15 +36,12 @@ public class EmailService {
 	@Autowired
 	private CurriculumRepository curriculumRepository;
 
-	
 	@Autowired
 	private CommonEmailTemplateService commonEmailTemplateService;
-	
 
 	@Autowired
 	private EmployeeRepository employeeRepository;
-	
-	
+
 	private String buildCourseSlug(String courseName) {
 		if (courseName == null || courseName.isBlank()) {
 			return "";
@@ -88,29 +85,8 @@ public class EmailService {
 		mailSender.send(message);
 	}
 
-//	public void sendInvoiceEmail(String toEmail, String studentName, String invoicePath) {
-//		try {
-//			MimeMessage message = mailSender.createMimeMessage();
-//			MimeMessageHelper helper = new MimeMessageHelper(message, true);
-//
-//			helper.setTo(toEmail);
-//			helper.setSubject("Invoice from Hachion");
-//			helper.setText("Dear " + studentName + ",\n\nPlease find your invoice attached.\n\nRegards,\nHachion");
-//			helper.setCc("trainings@hachion.co");
-//
-//			FileSystemResource file = new FileSystemResource(new File(invoicePath));
-//			helper.addAttachment("Invoice.pdf", file);
-//
-//			mailSender.send(message);
-//
-//		} catch (MessagingException e) {
-//			System.err.println("Failed to send email: " + e.getMessage());
-//			throw new RuntimeException("Email sending failed", e);
-//		}
-//	}
-
 	public void sendInvoiceEmailForParitialPaid(String toEmail, String studentName, String courseName,
-			double amountPaid, String invoicePath) {
+			double amountPaid, String currency, String invoicePath) {
 		try {
 			MimeMessage message = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -124,7 +100,7 @@ public class EmailService {
 					+ "<p>Thank you for completing the payment for the <strong>" + courseName
 					+ "</strong>. We’re excited to have you onboard!</p>"
 					+ "<p>We have successfully received your payment of <strong>" + String.format("%.2f", amountPaid)
-					+ " USD</strong>, and your enrollment is now confirmed.</p>"
+					+ " " + currency + "</strong>, and your enrollment is now confirmed.</p>"
 					+ "<p>Please find your invoice attached to this email for your records.</p>"
 					+ "<p><strong>🚀 Next Steps:</strong></p>" + "<ul>"
 					+ "<li>📱 A WhatsApp group will be created for the batch and the trainer — you’ll be added shortly</li>"
@@ -193,7 +169,7 @@ public class EmailService {
 	}
 
 	public void sendInvoiceEmail(String toEmail, String studentName, String courseName, double courseFee,
-			String invoicePath) {
+			String currency, String invoicePath) {
 		try {
 			MimeMessage message = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -202,13 +178,13 @@ public class EmailService {
 			helper.setSubject("🎓 Hachion – Enrollment Confirmation & Invoice for " + courseName);
 			helper.setCc("trainings@hachion.co");
 
-			String emailBody = String.format(
-					"<div style='font-family:Arial, sans-serif; font-size:14px; color:#000000 !important;'>"
+			String emailBody = String
+					.format("<div style='font-family:Arial, sans-serif; font-size:14px; color:#000000 !important;'>"
 							+ "<p>Dear <strong style='color:#000000 !important;'>%s</strong>,</p>"
 							+ "<p style='color:#000000 !important;'>Thank you for enrolling in the <strong>%s</strong> with Hachion.<br>"
 							+ "We are pleased to confirm your registration. Please find your invoice attached to this email for your records.</p>"
 							+ "<p style='color:#000000 !important;'><strong>💳 Payment Summary</strong><br>"
-							+ "Course Fee: <strong>%.2f USD</strong><br>" + "Payment Method: <strong>Zelle</strong><br>"
+							+ "Course Fee: <strong>%.2f %s</strong><br>" + "Payment Method: <strong>Zelle</strong><br>"
 							+ "Recipient Email: trainings@hachion.co<br>"
 							+ "Recipient Name: <strong>HACH TECHNOLOGIES LLC</strong></p>"
 							+ "<p style='color:#000000 !important;'>Should you have any questions or need further assistance, feel free to reach out. "
@@ -216,8 +192,7 @@ public class EmailService {
 							+ "<p style='color:#000000 !important;'>Warm regards,<br><br>"
 							+ "<strong>Team Hachion</strong><br>"
 							+ "🌐 <a href='https://www.hachion.co'>www.hachion.co</a><br>" + "📞 +1 (732) 485-2499<br>"
-							+ "📧 trainings@hachion.co</p>" + "</div>",
-					studentName, courseName, courseFee, invoicePath);
+							+ "📧 trainings@hachion.co</p>" + "</div>", studentName, courseName, courseFee, currency);
 
 			helper.setText(emailBody, true); // 'true' enables HTML
 
@@ -236,6 +211,7 @@ public class EmailService {
 			String to = paymentRequest.getEmail();
 			String courseName = paymentRequest.getCourseName();
 			double courseFee = paymentRequest.getBalancePay();
+			String currency = paymentRequest.getCurrency();
 
 			String fullName = paymentRequest.getStudentName();
 			String studentFirstName = fullName != null && fullName.contains(" ") ? fullName.split(" ")[0] : fullName;
@@ -249,7 +225,7 @@ public class EmailService {
 							+ "<strong>%s</strong> to secure your spot in the upcoming training.</p>"
 
 							+ "<p><strong>💳 Course Fee & Payment Instructions</strong><br>"
-							+ "Balance Course Fee: <strong>%.2f USD/INR</strong><br>"
+							+ "Balance Course Fee: <strong>%.2f %s</strong><br>"
 							+ "Payment Method: <strong>Zelle</strong><br>"
 							+ "Recipient Email: <strong>trainings@hachion.co</strong><br>"
 							+ "Recipient Name: <strong>HACH TECHNOLOGIES LLC</strong></p>"
@@ -262,7 +238,7 @@ public class EmailService {
 							+ "🌐 <a href='https://www.hachion.co' style='color:#001f7f !important;'>www.hachion.co</a><br>"
 							+ "📞 +1 (732) 485-2499<br>"
 							+ "📧 <a href='mailto:trainings@hachion.co' style='color:#001f7f !important;'>trainings@hachion.co</a></p>"
-							+ "</div>", studentFirstName, courseName, courseFee, courseName);
+							+ "</div>", studentFirstName, courseName, courseFee, currency, courseName);
 
 			MimeMessage message = mailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -1268,9 +1244,7 @@ public class EmailService {
 
 			String greeting;
 
-			if (userName != null 
-					&& !userName.trim().isEmpty()
-					&& !"null".equalsIgnoreCase(userName.trim())) {
+			if (userName != null && !userName.trim().isEmpty() && !"null".equalsIgnoreCase(userName.trim())) {
 
 				greeting = "Hi " + userName + ",";
 			} else {
@@ -1279,22 +1253,23 @@ public class EmailService {
 
 			String subject = "You’ve Been Unsubscribed from Hachion Updates";
 
-			String dynamicContent = greeting + """
+			String dynamicContent = greeting
+					+ """
 
 
-				We’ve received your request to unsubscribe from Hachion updates, and you’ve been successfully removed from our mailing list.
+											We’ve received your request to unsubscribe from Hachion updates, and you’ve been successfully removed from our mailing list.
 
-We’re sorry to see you go. At Hachion, our goal is to share valuable insights, practical learning resources, and career-focused training to help you stay ahead. If our emails didn’t meet your expectations, we truly appreciate your time and would love to improve.
+							We’re sorry to see you go. At Hachion, our goal is to share valuable insights, practical learning resources, and career-focused training to help you stay ahead. If our emails didn’t meet your expectations, we truly appreciate your time and would love to improve.
 
-If you ever wish to reconnect, you’re always welcome back to explore new courses and updates with us.
+							If you ever wish to reconnect, you’re always welcome back to explore new courses and updates with us.
 
-In case this was unintentional, or you’d like to manage your preferences instead, you can re-subscribe anytime.
+							In case this was unintentional, or you’d like to manage your preferences instead, you can re-subscribe anytime.
 
-Thank you for being a part of Hachion. Wishing you continued success in your learning journey.
+							Thank you for being a part of Hachion. Wishing you continued success in your learning journey.
 
-					Warm regards,
-					The Hachion Team
-					""";
+												Warm regards,
+												The Hachion Team
+												""";
 
 			String htmlBody = commonEmailTemplateService.buildEmailTemplate(userName, dynamicContent);
 
@@ -1304,6 +1279,7 @@ Thank you for being a part of Hachion. Wishing you continued success in your lea
 			e.printStackTrace();
 		}
 	}
+
 	public void sendHtmlEmail(String to, String subject, String htmlBody) {
 
 		try {
@@ -1324,6 +1300,7 @@ Thank you for being a part of Hachion. Wishing you continued success in your lea
 			e.printStackTrace();
 		}
 	}
+
 	public void sendSimpleEmail(String to, String subject, String body) {
 
 		try {
@@ -1343,8 +1320,8 @@ Thank you for being a part of Hachion. Wishing you continued success in your lea
 		}
 	}
 
-public void sendEmailForRegisterOffline(String toEmail, String tempPassword, String studentFullName, String coordinator)
-			throws MessagingException {
+	public void sendEmailForRegisterOffline(String toEmail, String tempPassword, String studentFullName,
+			String coordinator) throws MessagingException {
 		try {
 
 			String userName = (studentFullName != null && studentFullName.contains(" ")) ? studentFullName.split(" ")[0]
@@ -1374,25 +1351,20 @@ public void sendEmailForRegisterOffline(String toEmail, String tempPassword, Str
 
 			helper.setTo(toEmail);
 //			helper.setCc("trainings@hachion.co");
-			  if (coordinator != null &&
-		                !coordinator.trim().isEmpty()) {
+			if (coordinator != null && !coordinator.trim().isEmpty()) {
 
-		            Optional<Employee> employeeOptional =
-		                    employeeRepository
-		                            .findByNameIgnoreCase(coordinator);
+				Optional<Employee> employeeOptional = employeeRepository.findByNameIgnoreCase(coordinator);
 
-		            if (employeeOptional.isPresent()) {
+				if (employeeOptional.isPresent()) {
 
-		                String coordinatorEmail =
-		                        employeeOptional.get().getEmail();
+					String coordinatorEmail = employeeOptional.get().getEmail();
 
-		                if (coordinatorEmail != null &&
-		                        !coordinatorEmail.trim().isEmpty()) {
+					if (coordinatorEmail != null && !coordinatorEmail.trim().isEmpty()) {
 
-		                    helper.setCc(coordinatorEmail);
-		                }
-		            }
-		        }
+						helper.setCc(coordinatorEmail);
+					}
+				}
+			}
 			helper.setSubject("Welcome to Hachion");
 			helper.setText(htmlContent, true);
 

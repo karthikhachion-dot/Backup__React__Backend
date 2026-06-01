@@ -108,6 +108,19 @@ public class ScheduleController {
 	@PostMapping("/schedulecourse/add")
 	@ResponseStatus(code = HttpStatus.CREATED)
 	public void createCourse(@RequestBody CourseSchedule courseschedule) {
+		
+		long alreadyExists = repo.checkScheduleAlreadyExists(
+				courseschedule.getSchedule_category_name(),
+				courseschedule.getSchedule_course_name(),
+				courseschedule.getSchedule_date(),
+				courseschedule.getSchedule_time(),
+				courseschedule.getSchedule_mode());
+
+		if (alreadyExists > 0) {
+			throw new RuntimeException(
+					"Already this category, course, date, time and mode combination is available");
+		}
+		
 		String prefix = "";
 		if ("Live Demo".equalsIgnoreCase(courseschedule.getSchedule_mode())) {
 			prefix = "LDM-";

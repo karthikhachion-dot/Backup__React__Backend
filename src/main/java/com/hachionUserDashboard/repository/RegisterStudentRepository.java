@@ -189,4 +189,7 @@ public interface RegisterStudentRepository extends JpaRepository<RegisterStudent
 			LIMIT 1
 			""", nativeQuery = true)
 	Optional<RegisterStudent> getStudentByEmail(@Param("email") String email);
+
+	@Query("SELECT DISTINCT r.seoTeam FROM RegisterStudent r WHERE r.seoTeam IS NOT NULL AND r.seoTeam <> ''")
+	List<String> getDistinctSeoTeams();
 }

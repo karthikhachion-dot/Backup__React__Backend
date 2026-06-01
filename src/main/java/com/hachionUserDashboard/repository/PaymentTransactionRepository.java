@@ -18,6 +18,24 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 	Double findAmountPaidForCourse(@Param("studentId") String studentId, @Param("courseName") String courseName,
 			@Param("batchId") String batchId);
 
+//	@Query(value = "SELECT * FROM payment_transactions pt " + "WHERE pt.student_id = :studentId "
+//			+ "AND pt.course_name = :courseName " + "LIMIT 1", nativeQuery = true)
+//	Optional<PaymentTransaction> findByStudentIdAndCourseName(@Param("studentId") String studentId,
+//			@Param("courseName") String courseName);
+
+//	@Query(value = "SELECT * FROM payment_transactions pt " +
+//	        "WHERE pt.student_id = :studentId " +
+//	        "AND pt.course_name = :courseName " +
+//	        "AND pt.batch_id = :batchId " +
+//	        "ORDER BY pt.payment_date DESC " +
+//	        "LIMIT 1",
+//	        nativeQuery = true)
+//	Optional<PaymentTransaction> findByStudentIdAndCourseName(
+//	        @Param("studentId") String studentId,
+//	        @Param("courseName") String courseName,
+//	        @Param("batchId") String batchId);
+//	
+
 	@Query(value = "SELECT * FROM payment_transactions pt " + "WHERE pt.student_id = :studentId "
 			+ "AND pt.course_name = :courseName " + "AND pt.batch_id = :batchId " + "LIMIT 1", nativeQuery = true)
 	Optional<PaymentTransaction> findByStudentIdAndCourseName(@Param("studentId") String studentId,
@@ -72,8 +90,10 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 	List<Object[]> findInstallmentUiStatus(@Param("studentId") String studentId, @Param("courseName") String courseName,
 			@Param("batchId") String batchId);
 
-	@Query(value = "SELECT * FROM payment_transactions " + "WHERE number_of_installments > 0 "
-			+ "OR number_of_installments IS NULL " + "ORDER BY request_date DESC", nativeQuery = true)
+	@Query(value = "SELECT * FROM payment_transactions " +
+	        "WHERE number_of_installments > 0 " +
+	        "OR number_of_installments IS NULL " +
+	        "ORDER BY request_date DESC", nativeQuery = true)
 	List<PaymentTransaction> findRequestedInstallments();
 	
 	@Modifying

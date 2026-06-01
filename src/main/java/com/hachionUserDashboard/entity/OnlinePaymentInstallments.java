@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 @Table(name = "online_payment_installments")

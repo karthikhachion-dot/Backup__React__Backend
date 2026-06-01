@@ -516,6 +516,7 @@ public class PaymentServiceImpl implements PaymentService {
 		context.setVariable("studentPhone", paymentRequest.getMobile());
 		context.setVariable("courseName", paymentRequest.getCourseName());
 		context.setVariable("coursePrice", String.format("%.2f", paymentRequest.getCourseFee()));
+		context.setVariable("currency", paymentRequest.getCurrency());
 		context.setVariable("discount", paymentRequest.getDiscount() + ".00");
 		context.setVariable("tax", paymentRequest.getTax() + ".00");
 		context.setVariable("totalAmount", String.format("%.2f", paymentRequest.getTotalAmount()));
@@ -553,7 +554,9 @@ public class PaymentServiceImpl implements PaymentService {
 			context.setVariable("receivedPay", String.format("%.2f", receivedPayAmount));
 		}
 
-		context.setVariable("amountValue", "$" + String.format("%.2f", paymentRequest.getBalancePay()));
+		context.setVariable("amountValue",
+		        paymentRequest.getCurrency() + " " +
+		        String.format("%.2f", paymentRequest.getBalancePay()));
 
 		String status = paymentRequest.getStatus();
 		String emailStatus = status;
@@ -605,17 +608,26 @@ public class PaymentServiceImpl implements PaymentService {
 			try {
 				if ("PARTIALLY PAID".equalsIgnoreCase(emailStatus)) {
 					double amountPaid = paymentRequest.getTotalAmount() - paymentRequest.getBalancePay();
-
-					emailService.sendInvoiceEmailForParitialPaid(paymentRequest.getEmail(),
-							paymentRequest.getStudentName(), paymentRequest.getCourseName(), amountPaid, pdfFilePath);
-
+					emailService.sendInvoiceEmailForParitialPaid(
+					        paymentRequest.getEmail(),
+					        paymentRequest.getStudentName(),
+					        paymentRequest.getCourseName(),
+					        amountPaid,
+					        paymentRequest.getCurrency(),
+					        pdfFilePath);
+					
 				} else if ("PAID".equalsIgnoreCase(emailStatus)) {
 					emailService.sendInvoiceEmailForPaid(paymentRequest.getEmail(), paymentRequest.getStudentName(),
 							paymentRequest.getCourseName(), paymentRequest.getTotalAmount(), pdfFilePath);
 
 				} else if ("NOT PAID".equalsIgnoreCase(emailStatus)) {
-					emailService.sendInvoiceEmail(paymentRequest.getEmail(), paymentRequest.getStudentName(),
-							paymentRequest.getCourseName(), paymentRequest.getBalancePay(), pdfFilePath);
+					emailService.sendInvoiceEmail(
+					        paymentRequest.getEmail(),
+					        paymentRequest.getStudentName(),
+					        paymentRequest.getCourseName(),
+					        paymentRequest.getBalancePay(),
+					        paymentRequest.getCurrency(),
+					        pdfFilePath);
 
 				} else {
 
@@ -794,16 +806,26 @@ public class PaymentServiceImpl implements PaymentService {
 				if ("PARTIALLY PAID".equalsIgnoreCase(emailStatus)) {
 					double amountPaid = paymentRequest.getTotalAmount() - paymentRequest.getBalancePay();
 
-					emailService.sendInvoiceEmailForParitialPaid(paymentRequest.getEmail(),
-							paymentRequest.getStudentName(), paymentRequest.getCourseName(), amountPaid, pdfFilePath);
-
+					emailService.sendInvoiceEmailForParitialPaid(
+					        paymentRequest.getEmail(),
+					        paymentRequest.getStudentName(),
+					        paymentRequest.getCourseName(),
+					        amountPaid,
+					        paymentRequest.getCurrency(),
+					        pdfFilePath);
+					
 				} else if ("PAID".equalsIgnoreCase(emailStatus)) {
 					emailService.sendInvoiceEmailForPaid(paymentRequest.getEmail(), paymentRequest.getStudentName(),
 							paymentRequest.getCourseName(), paymentRequest.getTotalAmount(), pdfFilePath);
 
 				} else if ("NOT PAID".equalsIgnoreCase(emailStatus)) {
-					emailService.sendInvoiceEmail(paymentRequest.getEmail(), paymentRequest.getStudentName(),
-							paymentRequest.getCourseName(), paymentRequest.getBalancePay(), pdfFilePath);
+					emailService.sendInvoiceEmail(
+					        paymentRequest.getEmail(),
+					        paymentRequest.getStudentName(),
+					        paymentRequest.getCourseName(),
+					        paymentRequest.getBalancePay(),
+					        paymentRequest.getCurrency(),
+					        pdfFilePath);
 
 				} else {
 
@@ -957,7 +979,12 @@ public class PaymentServiceImpl implements PaymentService {
 
 		}
 
-		context.setVariable("amountValue", "$" + String.format("%.2f", paymentRequest.getTotalAmount()));
+//		context.setVariable("amountValue", "$" + String.format("%.2f", paymentRequest.getTotalAmount()));
+		
+		context.setVariable("amountValue",
+		        paymentRequest.getCurrency() + " " +
+		        String.format("%.2f", paymentRequest.getBalancePay()));
+		
 		context.setVariable("receivedPay", String.format("%.2f", paymentRequest.getTotalAmount()));
 
 		String status = paymentRequest.getStatus();

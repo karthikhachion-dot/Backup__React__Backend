@@ -786,7 +786,7 @@ public class EnrollController {
 
 		enroll.setAmount(0.0);
 
-		enroll.setPaymentStatus("Pending");
+		enroll.setPaymentStatus("Pending Payment");
 
 		enroll.setEnrollmentStatus("Offline");
 

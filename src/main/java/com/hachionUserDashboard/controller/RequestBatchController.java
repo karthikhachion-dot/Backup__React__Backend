@@ -27,7 +27,7 @@ import com.hachionUserDashboard.service.WhatsAppService;
 import jakarta.mail.internet.MimeMessage;
 
 @CrossOrigin
-//@CrossOrigin(origins = {"http://localhost:3000", "http://hachion.co"})
+
 @RestController
 public class RequestBatchController {
 

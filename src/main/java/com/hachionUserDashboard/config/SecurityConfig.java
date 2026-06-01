@@ -32,8 +32,9 @@ public class SecurityConfig {
 			AuthenticationSuccessHandler authenticationSuccessHandler // injected GoogleAuthSuccessHandler
 	) throws Exception {
 
-		http.csrf(csrf -> csrf.disable())
-				.authorizeHttpRequests(authz -> authz.requestMatchers(new AntPathRequestMatcher("/**")).permitAll()
+		http.cors() // ? IMPORTANT FIX
+        .and().csrf(csrf -> csrf.disable())
+        				.authorizeHttpRequests(authz -> authz.requestMatchers(new AntPathRequestMatcher("/**")).permitAll()
 						.anyRequest().authenticated())
 				.oauth2Login(
 						oauth2 -> oauth2.loginPage("/api/v1/user/login2").successHandler(authenticationSuccessHandler))

@@ -143,4 +143,21 @@ public interface CourseScheduleRepository extends JpaRepository<CourseSchedule, 
 			LIMIT 1
 			""", nativeQuery = true)
 	CourseSchedule getScheduleDetails(@Param("courseName") String courseName, @Param("batchId") String batchId);
+	
+	@Query(value = """
+			SELECT COUNT(*) 
+			FROM schedule 
+			WHERE schedule_category_name = :categoryName
+			AND schedule_course_name = :courseName
+			AND schedule_date = :scheduleDate
+			AND schedule_time = :scheduleTime
+			AND schedule_mode = :scheduleMode
+			""", nativeQuery = true)
+	long checkScheduleAlreadyExists(
+			@Param("categoryName") String categoryName,
+			@Param("courseName") String courseName,
+			@Param("scheduleDate") String scheduleDate,
+			@Param("scheduleTime") String scheduleTime,
+			@Param("scheduleMode") String scheduleMode);
+
 }

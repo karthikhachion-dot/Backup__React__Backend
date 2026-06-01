@@ -54,6 +54,7 @@ public class EmailAutomationRule {
 
 	@Column(name = "failed_count")
 	private Integer failedCount = 0;
+	
 	@Column(name = "last_run_at")
 	private LocalDateTime lastRunAt;
 

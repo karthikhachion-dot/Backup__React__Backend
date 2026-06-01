@@ -379,36 +379,13 @@ public class UserController {
 		}
 	}
 
-//	@PostMapping("/complete-signup")
-//	public ResponseEntity<?> completeSignup(@AuthenticationPrincipal OidcUser oidc,
-//			@RequestBody Map<String, String> body) {
-//		if (oidc == null)
-//			return ResponseEntity.status(401).build();
-//		String email = oidc.getEmail();
-//		String phone = body.get("phone");
-//
-//		RegisterStudent user = registerStudentRepository.findByEmail(email);
-//		if (user == null || !"PENDING".equalsIgnoreCase(user.getStatus())) {
-//			return ResponseEntity.badRequest().body(Map.of("error", "No pending signup for this user"));
-//		}
-//
-//		// validate phone here …
-////	  user.setPhone(phone);
-//		user.setStatus("ACTIVE");
-//		registerStudentRepository.save(user);
-//
-//		return ResponseEntity.ok(Map.of("ok", true));
-//	}
 	@PostMapping("/complete-signup")
 	public ResponseEntity<?> completeSignup(@AuthenticationPrincipal OidcUser oidc,
 			@RequestBody Map<String, String> body) {
 		if (oidc == null)
 			return ResponseEntity.status(401).build();
 		String email = oidc.getEmail();
-		
-		String mobile = body.get("mobile");
-		String whatsapp = body.get("whatsapp");
-		String country = body.get("country");
+		String phone = body.get("phone");
 
 		RegisterStudent user = registerStudentRepository.findByEmail(email);
 //		if (user == null || !"PENDING".equalsIgnoreCase(user.getStatus())) {
@@ -420,11 +397,7 @@ public class UserController {
 
 		// validate phone here …
 //	  user.setPhone(phone);
-		user.setMobile(mobile);
-		user.setWhatsapp(whatsapp);
-		user.setCountry(country);
 		user.setStatus("ACTIVE");
-//		user.setStatus("ACTIVE");
 		registerStudentRepository.save(user);
 
 		return ResponseEntity.ok(Map.of("ok", true));

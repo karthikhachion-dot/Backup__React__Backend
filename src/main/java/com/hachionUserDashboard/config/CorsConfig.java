@@ -16,6 +16,7 @@ public class CorsConfig {
 	            registry.addMapping("/**")
 	                    .allowedOrigins("https://hachion.co", "https://www.hachion.co","https://test.hachion.co","http://localhost:3000", "http://localhost:3001", "https://api.test.hachion.co","http://localhost:8081")
 	                    .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+						.allowedMethods("*")
 	                    .allowedHeaders("*")
 	                    .exposedHeaders("Certificate-Id")
 	                    .allowCredentials(true);

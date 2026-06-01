@@ -20,9 +20,9 @@ public interface TrainerService {
 	Trainer updateTrainer(int trainerId, Trainer updatedTrainer, MultipartFile trainerImage) throws IOException;
 
 	void deleteTrainer(int trainerId);
-
+	
 	public List<Trainer> getTrainersByCourseName(String courseName);
 
-	public List<Map<String, Object>> getTrainerSummaries();
+	List<Map<String, Object>> getTrainerSummaries();
 
 }

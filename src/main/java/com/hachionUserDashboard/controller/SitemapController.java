@@ -32,22 +32,26 @@ public class SitemapController {
 		// Home
 		xml.append(buildUrl("https://www.hachion.co/", "daily", "1.0"));
 
-		// Courses
 		for (Course course : courses) {
-			if (course.getCourseName() == null)
+
+			if (course.getCourseName() == null || course.getCourseCategory() == null)
 				continue;
 
-			String slug = generateSlug(course.getCourseName());
-			xml.append(buildUrl("https://www.hachion.co/courses/" + slug, "daily", "0.9"));
+			String categorySlug = generateSlug(course.getCourseCategory());
+			String courseSlug = generateSlug(course.getCourseName());
+
+			xml.append(buildUrl("https://www.hachion.co/courses/" + categorySlug + "/" + courseSlug, "daily", "0.9"));
+
 		}
 		for (Object[] row : blogs) {
 
-			Integer id = ((Number) row[0]).intValue();
-			String category = (String) row[1];
-			String title = (String) row[2];
+			String category = (String) row[0];
+			String shortTitle = (String) row[1];
 
-			String blogUrl = "https://www.hachion.co/blogs/" + generateSlug(category) + "/" + generateSlug(title) + "-"
-					+ id;
+			String blogUrl = "https://www.hachion.co/blogs/"
+			        + generateSlug(category)
+			        + "/"
+			        + generateSlug(shortTitle);
 
 			xml.append(buildUrl(blogUrl, "weekly", "0.8"));
 		}
@@ -62,7 +66,12 @@ public class SitemapController {
 	}
 
 	private String generateSlug(String courseName) {
-		return courseName.toLowerCase().trim().replaceAll("\\s+", "-");
+
+	    if (courseName == null || courseName.trim().isEmpty()) {
+	        return "";
+	    }
+
+	    return courseName.toLowerCase().trim().replaceAll("\\s+", "-");
 	}
 
 	private String buildUrl(String loc, String freq, String priority) {

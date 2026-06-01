@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.hachionUserDashboard.dto.AskQueryWebhookRequest;
 import com.hachionUserDashboard.dto.BlogInquiryRequest;
+import com.hachionUserDashboard.dto.EnrollmentWebhookRequest;
 import com.hachionUserDashboard.dto.TalkToOurAdvisorRequest;
 import com.hachionUserDashboard.dto.UnsubscribeRequest;
 import com.hachionUserDashboard.entity.Enroll;
@@ -57,7 +58,9 @@ public class WebhookSenderService {
 	private final String BLOG_INQUIRY_FORM = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
 
 	private final String UNSUBSCRIBE_FORM = "https://chat.googleapis.com/v1/spaces/AAQAiUTh2RA/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=0VwA2Cv9RUWH-4881FKhu5gNe9N5Y5PBiC5knbRdjOU";
-	
+
+	private static final String CHAT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAAAc5Lr1_Q/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=VqQb-qSQXOcaycqIJUd7emP4-do_W_xW9A_lAYVHbPI";
+
 	public void sendRegistrationDetailsOnline(RegisterStudent student) {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
@@ -564,82 +567,85 @@ public class WebhookSenderService {
 
 		restTemplate.postForEntity(BLOG_INQUIRY_FORM, entity, String.class);
 	}
+
 	public void sendGoogleFormRegistrationDetails(RegisterStudent student, boolean isDuplicate) {
 
-	    String heading = isDuplicate
-	            ? "⚠️ *Duplicate Lead from %s!*"
-	            : "📢 *New Lead from %s!*";
+		String heading = isDuplicate ? "⚠️ *Duplicate Lead from %s!*" : "📢 *New Lead from %s!*";
 
-	    String message = String.format(
-	            heading + "\n\n" +
-	            "*Email:* %s\n" +
-	            "*Name:* %s\n" +
-	            "*Phone:* %s\n" +
-	            "*WhatsApp:* %s\n" +
-	            "*Course:* %s\n" +
-	            "*Country:* %s\n" +
-	            "*State:* %s",
+		String message = String.format(
+				heading + "\n\n" + "*Email:* %s\n" + "*Name:* %s\n" + "*Phone:* %s\n" + "*WhatsApp:* %s\n"
+						+ "*Course:* %s\n" + "*Country:* %s\n" + "*State:* %s",
 
-	            student.getSeoTeam() != null ? student.getSeoTeam() : "Unknown",
+				student.getSeoTeam() != null ? student.getSeoTeam() : "Unknown",
 
-	            student.getEmail(),
-	            student.getUserName(),
-	            student.getMobile(),
-	            student.getWhatsapp(),
-	            student.getCourse_name(),
-	            student.getCountry() != null ? student.getCountry() : "N/A",
-	            student.getStateCity() != null ? student.getStateCity() : "N/A"
-	    );
+				student.getEmail(), student.getUserName(), student.getMobile(), student.getWhatsapp(),
+				student.getCourse_name(), student.getCountry() != null ? student.getCountry() : "N/A",
+				student.getStateCity() != null ? student.getStateCity() : "N/A");
 
-	    HttpHeaders headers = new HttpHeaders();
-	    headers.setContentType(MediaType.APPLICATION_JSON);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
 
-	    String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
+		String payload = "{\"text\": \"" + message.replace("\"", "\\\"") + "\"}";
 
-	    HttpEntity<String> entity = new HttpEntity<>(payload, headers);
+		HttpEntity<String> entity = new HttpEntity<>(payload, headers);
 
-	    try {
-	        restTemplate.postForEntity(ASK_A_QUERY, entity, String.class);
-	        System.out.println("✅ Webhook sent successfully.");
-	    } catch (Exception e) {
-	        System.err.println("❌ Failed to send webhook: " + e.getMessage());
-	    }
+		try {
+			restTemplate.postForEntity(ASK_A_QUERY, entity, String.class);
+			System.out.println("✅ Webhook sent successfully.");
+		} catch (Exception e) {
+			System.err.println("❌ Failed to send webhook: " + e.getMessage());
+		}
 	}
+
 	public void sendUnsubscribeNotification(UnsubscribeRequest request) {
 
-	    try {
+		try {
 
-	        RestTemplate restTemplate = new RestTemplate();
+			RestTemplate restTemplate = new RestTemplate();
 
-	        String message =
-	                "🚫 Hachion Unsubscribe Alert\n\n" +
+			String message = "🚫 Hachion Unsubscribe Alert\n\n" +
 
-	                "👤 Name: " + request.getUserName() + "\n" +
-	                "📧 Email: " + request.getEmail() + "\n" +
-	                "📱 Mobile: " + request.getMobile() + "\n" +
-	                "🌍 Country: " + request.getCountry() + "\n" +
-	                "📝 Reason: " + request.getReason() + "\n" +
-	                "💬 Comments: " + request.getComments() + "\n" +
-	                "📅 Date: " + LocalDate.now()
-	                .format(DateTimeFormatter.ofPattern("MMM-dd-yyyy"));
+					"👤 Name: " + request.getUserName() + "\n" + "📧 Email: " + request.getEmail() + "\n"
+					+ "📱 Mobile: " + request.getMobile() + "\n" + "🌍 Country: " + request.getCountry() + "\n"
+					+ "📝 Reason: " + request.getReason() + "\n" + "💬 Comments: " + request.getComments() + "\n"
+					+ "📅 Date: " + LocalDate.now().format(DateTimeFormatter.ofPattern("MMM-dd-yyyy"));
 
-	        Map<String, String> body = new HashMap<>();
-	        body.put("text", message);
+			Map<String, String> body = new HashMap<>();
+			body.put("text", message);
 
-	        HttpHeaders headers = new HttpHeaders();
-	        headers.setContentType(MediaType.APPLICATION_JSON);
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
 
-	        HttpEntity<Map<String, String>> entity =
-	                new HttpEntity<>(body, headers);
+			HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
 
-	        restTemplate.postForEntity(
-	        		UNSUBSCRIBE_FORM,
-	                entity,
-	                String.class
-	        );
+			restTemplate.postForEntity(UNSUBSCRIBE_FORM, entity, String.class);
 
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	    }
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sendEnrollmentDetailsToChat(EnrollmentWebhookRequest request) {
+
+		String message = """
+				📢 *New Enquiry Form From Popup*
+
+				👤 Name: %s
+				📧 Email: %s
+				📞 Phone: %s
+				🎓 Course: %s
+				⏰ Time: %s
+				""".formatted(request.getName(), request.getEmail(), request.getPhone(), request.getCourseName(),
+				 request.getTimestamp());
+
+		Map<String, String> payload = new HashMap<>();
+		payload.put("text", message);
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		HttpEntity<Map<String, String>> entity = new HttpEntity<>(payload, headers);
+
+		restTemplate.postForEntity(CHAT_WEBHOOK_URL, entity, String.class);
 	}
 }

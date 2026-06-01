@@ -57,7 +57,7 @@ public class PaymentTransaction {
 	@Column(name = "batch_id")
 	private String batchId;
 
-	@Column(name = "payer_email")
+	@Column(name = "payer_email",nullable = false)
 	private String payerEmail;
 
 	@Column(name = "payment_date")

@@ -31,7 +31,7 @@ public class PopupOnboarding {
 	@Column(name = "student_name")
 	private String studentName;
 
-	@Column(name = "student_email")
+	@Column(name = "student_email",nullable = false)
 	private String studentEmail;
 
 	@Column(name = "mobile")

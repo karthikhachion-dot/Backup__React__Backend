@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -27,7 +28,8 @@ public class FaqQuery {
 	@Column(name = "email_id")
 	private String emailId;
 
-	@Column(name = "message")
+	@Lob
+	@Column(nullable = true, columnDefinition = "LONGTEXT")
 	private String message;
 
 	@Column(name = "date")

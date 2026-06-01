@@ -424,4 +424,8 @@ public class RegisterStudentController {
 	public ResponseEntity<List<String>> getAllTimeZones() {
 	    return ResponseEntity.ok(service.getAllTimeZones());
 	}
+ @GetMapping("/seo-team")
+	    public ResponseEntity<List<String>> getSeoTeams() {
+	        return ResponseEntity.ok(service.getSeoTeams());
+	    }
 }

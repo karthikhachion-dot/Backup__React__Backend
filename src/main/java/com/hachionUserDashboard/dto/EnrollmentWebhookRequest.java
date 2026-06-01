@@ -10,6 +10,9 @@ public class EnrollmentWebhookRequest {
     private String feedback;
     private String remark;
     private String timestamp;
+   
+    private String country;
+    
 	public String getName() {
 		return name;
 	}
@@ -63,6 +66,12 @@ public class EnrollmentWebhookRequest {
 	}
 	public void setTimestamp(String timestamp) {
 		this.timestamp = timestamp;
+	}
+	public String getCountry() {
+		return country;
+	}
+	public void setCountry(String country) {
+		this.country = country;
 	}
 
     // getters and setters

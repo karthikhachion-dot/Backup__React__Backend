@@ -829,6 +829,10 @@ public class RegisterStudentService {
 		return status;
 	}
 	public List<String> getAllTimeZones() {
-	    return repository.findAllTimeZones();
+		return repository.findAllTimeZones();
+	}
+
+	public List<String> getSeoTeams() {
+		return repository.getDistinctSeoTeams();
 	}
 }

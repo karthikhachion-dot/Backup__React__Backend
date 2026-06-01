@@ -240,7 +240,7 @@
                     <th>#</th>
                     <th>ITEMS &amp; DESCRIPTION</th>
                     <th>QTY/HRS</th>
-                    <th>PRICE</th>
+                    <th>PRICE testing</th>
                 </tr>
             </thead>
             <tbody>
@@ -249,7 +249,7 @@
                     <td>1</td>
 					<td th:text="${courseName}">QA Pri training</td>
 					    <td>1</td>
-					    <td th:text="'$' + ${coursePrice}">$950.00</td>
+					    <td th:text="${coursePrice}">950.00</td>
                 </tr>
             </tbody>
         </table>
@@ -258,23 +258,23 @@
             <table>
                 <tr>
                     <td style="text-align: right;">Subtotal</td>
-                    <td style="text-align: right; width: 100px;"th:text="'$' + ${coursePrice}">$950.00</td>
+                    <td style="text-align: right; width: 100px;" th:text="${coursePrice}">950.00</td>
                 </tr>
                 <tr>
                     <td style="text-align: right;">Discount</td>
-                    <td style="text-align: right;"th:text="'$' + ${discount}" >-$155.00</td>
+                    <td style="text-align: right;" th:text="${discount}">155.00</td>
                 </tr>
                 <tr>
                     <td style="text-align: right;">Tax</td>
-                    <td style="text-align: right;"th:text="'$' + ${tax}">$55.65</td>
+                    <td style="text-align: right;" th:text="${tax}">55.65</td>
                 </tr>
                 <tr class="total-row">
                     <td style="text-align: right;">TOTAL</td>
-                    <td style="text-align: right;"th:text="'$' + ${totalAmount}">$850.65 USD</td>
+                    <td style="text-align: right;" th:text="${totalAmount}">850.65</td>
                 </tr>
                 <tr>
                     <td style="text-align: right;">Amount paid</td>
-                    <td style="text-align: right;"th:text="'$' + ${receivedPay}">$450.00</td>
+                    <td style="text-align: right;" th:text="${receivedPay}">450.00</td>
                 </tr>
                 <tr>
                     <td style="text-align: right; font-weight: bold;">AMOUNT DUE</td>
