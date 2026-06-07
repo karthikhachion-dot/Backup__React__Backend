@@ -108,10 +108,14 @@ public class PaymentServiceImpl implements PaymentService {
 		payment.setTotalAmount(paymentRequest.getTotalAmount());
 		payment.setBalancePay(paymentRequest.getBalancePay());
 		payment.setCurrency(paymentRequest.getCurrency());
-		if (paymentRequest.getBalancePay() != null && paymentRequest.getBalancePay() == 0) {
+		if (paymentRequest.getBalancePay() != null
+		        && Double.compare(paymentRequest.getBalancePay(), 0.0) == 0) {
+
 		    payment.setStopReminder("stop");
-		} else {
-		    payment.setStopReminder("start"); // optional default
+
+		} else if (paymentRequest.getBalancePay() != null) {
+
+		    payment.setStopReminder("start");
 		}
 		
 		if (Double.compare(paymentRequest.getTotalAmount(), paymentRequest.getBalancePay()) == 0) {

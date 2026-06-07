@@ -149,4 +149,5 @@ public interface EnrollRepository extends JpaRepository<Enroll, Integer> {
 		        @Param("courseName") String courseName,
 		        @Param("batchId") String batchId
 		);
+	boolean existsByEmail(String email);
 }

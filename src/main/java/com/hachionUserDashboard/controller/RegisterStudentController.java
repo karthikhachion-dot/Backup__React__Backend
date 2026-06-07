@@ -29,6 +29,7 @@ import com.hachionUserDashboard.dto.StudentRemarkResponse;
 import com.hachionUserDashboard.entity.RegisterStudent;
 import com.hachionUserDashboard.entity.StudentRemarksHistory;
 import com.hachionUserDashboard.repository.EmailAutomationRuleRepository;
+import com.hachionUserDashboard.repository.EnrollRepository;
 import com.hachionUserDashboard.repository.RegisterStudentRepository;
 import com.hachionUserDashboard.service.EmailService;
 import com.hachionUserDashboard.service.RegisterStudentService;
@@ -60,6 +61,9 @@ public class RegisterStudentController {
 	
 	@Autowired
 	private WebhookSenderService webhookSenderService;
+	
+	@Autowired
+	private EnrollRepository enrollRepository;
 
 	@GetMapping("/registerstudent/{id}")
 	public ResponseEntity<RegisterStudent> getRegisterStudent(@PathVariable Long id) {
@@ -243,6 +247,8 @@ public class RegisterStudentController {
 			if (req.getStatus() != null)
 				existing.setStatus(req.getStatus());
 
+			if (req.getCoordinator() != null)
+			    existing.setCoordinator(req.getCoordinator());
 			if (req.getSeoTeam() != null)
 				existing.setSeoTeam(req.getSeoTeam());
 
@@ -255,30 +261,6 @@ public class RegisterStudentController {
 			if (req.getLeadStatus() != null)
 				existing.setLeadStatus(req.getLeadStatus());
 			
-//			if (req.getLeadTag() != null) {
-//
-//			    // ✅ CHECK ONLY IF TAG IS CHANGING
-//			    boolean tagChanged =
-//			            existing.getLeadTag() == null ||
-//			            !existing.getLeadTag()
-//			                    .equalsIgnoreCase(req.getLeadTag());
-//
-//			    if (tagChanged) {
-//
-//			        Long automationCount =
-//			                automationRuleRepository
-//			                .existsRunningAutomationByLeadStatus(
-//			                        existing.getLeadTag());
-//
-//			        if (automationCount > 0) {
-//
-//			            throw new RuntimeException(
-//			                    "This lead is under email automation. Please wait until automation finishes.");
-//			        }
-//			    }
-//
-//			    existing.setLeadTag(req.getLeadTag());
-//			}
 			if (req.getLeadTag() != null || req.getTime_zone() != null) {
 
 			    boolean tagChanged = false;
@@ -331,7 +313,7 @@ public class RegisterStudentController {
 				existing.setStatus(req.getStatus());
 
 			// ===== AUDIT =====
-			existing.setDate(LocalDate.now()); // update date on edit
+//			existing.setDate(LocalDate.now()); // update date on edit
 
 			repo.save(existing);
 			return ResponseEntity.ok(existing);
@@ -341,7 +323,19 @@ public class RegisterStudentController {
 
 	@DeleteMapping("registerstudent/delete/{id}")
 	public ResponseEntity<?> deleteRegisterStudent(@PathVariable Long id) {
+
+		RegisterStudent student = repo.findById(id)
+				.orElseThrow(() -> new RuntimeException("Student not found"));
+
+		String email = student.getEmail();
+
+		if (enrollRepository.existsByEmail(email)) {
+			return ResponseEntity.badRequest()
+					.body("Cannot delete student. This student is already enrolled.");
+		}
+
 		repo.deleteById(id);
+
 		return ResponseEntity.ok("Student deleted successfully.");
 	}
 

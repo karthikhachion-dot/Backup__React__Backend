@@ -754,34 +754,31 @@ public class RegisterStudentService {
 		return results.stream().map(obj -> new RegisterStudentResponseDTO(
 
 				((Number) obj[0]).longValue(), // id
-				(String) obj[1], // studentId
-				(String) obj[2], // email
-				(String) obj[3], // course_name
-				(String) obj[4], // mobile
-				(String) obj[5], // whatsapp
-				(String) obj[6], // userName
-				(String) obj[7], // country
-				(String) obj[8], // stateCity
-				(String) obj[9], // coordinator
-				(String) obj[10], // leadStatus
-				(String) obj[11], // leadTag ✅
-				obj[12] != null ? obj[12].toString() : null, // date
-
-				(String) obj[13], // remark
-				(String) obj[14], // callMadeOn
-				(String) obj[15], // lastCallMadeOn
-				(String) obj[16], // remarkCoordinator
-
-				(String) obj[17], // mode
-				(String) obj[18], // timeZone
-				(String) obj[19], // analystName
-				(String) obj[20], // source
-				(String) obj[21], // seoTeam
-				(String) obj[22], // seoTeam
-//				(LocalDateTime) obj[23]
-				obj[23] != null
-			    ? ((Timestamp) obj[23]).toLocalDateTime()
-			    : null
+				(String) obj[1],  // studentId
+				(String) obj[2],  // email
+				(String) obj[3],  // course_name
+				(String) obj[4],  // mobile
+				(String) obj[5],  // whatsapp
+				(String) obj[6],  // userName
+				(String) obj[7],   // country
+				(String) obj[8],   // location
+				(String) obj[9],   // visaStatus
+				(String) obj[10],  // stateCity
+				(String) obj[11],  // coordinator
+				(String) obj[12],  // leadStatus
+				(String) obj[13],  // leadTag
+				obj[14] != null ? obj[14].toString() : null,
+				(String) obj[15],  // remark
+				(String) obj[16],  // callMadeOn
+				(String) obj[17],  // lastCallMadeOn
+				(String) obj[18],  // remarkCoordinator
+				(String) obj[19],  // mode
+				(String) obj[20],  // timeZone
+				(String) obj[21],  // analystName
+				(String) obj[22],  // source
+				(String) obj[23],  // seoTeam
+				(String) obj[24],  // status
+				obj[25] != null ? ((Timestamp) obj[25]).toLocalDateTime() : null
 
 		)).toList();
 	}

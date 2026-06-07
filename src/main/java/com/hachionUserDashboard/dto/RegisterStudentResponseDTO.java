@@ -12,6 +12,8 @@ public class RegisterStudentResponseDTO {
 	private String whatsapp;
 	private String userName;
 	private String country;
+	private String location;
+	private String visaStatus;
 	private String stateCity;
 	private String coordinator;
 	private String leadStatus;
@@ -202,37 +204,63 @@ public class RegisterStudentResponseDTO {
 	public String getLeadTag() {
 		return leadTag;
 	}
-	public RegisterStudentResponseDTO(Long id, String studentId, String email, String course_name, String mobile,
-		String whatsapp, String userName, String country, String stateCity, String coordinator, String leadStatus,
-		String leadTag, String date, String remark, String callMadeOn, String lastCallMadeOn, String remarkCoordinator,
-		String mode, String timeZone, String analystName, String source, String seoTeam, String status,
-		LocalDateTime lastEmailSentAt) {
-	super();
-	this.id = id;
-	this.studentId = studentId;
-	this.email = email;
-	this.course_name = course_name;
-	this.mobile = mobile;
-	this.whatsapp = whatsapp;
-	this.userName = userName;
-	this.country = country;
-	this.stateCity = stateCity;
-	this.coordinator = coordinator;
-	this.leadStatus = leadStatus;
-	this.leadTag = leadTag;
-	this.date = date;
-	this.remark = remark;
-	this.callMadeOn = callMadeOn;
-	this.lastCallMadeOn = lastCallMadeOn;
-	this.remarkCoordinator = remarkCoordinator;
-	this.mode = mode;
-	this.timeZone = timeZone;
-	this.analystName = analystName;
-	this.source = source;
-	this.seoTeam = seoTeam;
-	this.status = status;
-	this.lastEmailSentAt = lastEmailSentAt;
-}
+	public RegisterStudentResponseDTO(
+	        Long id,
+	        String studentId,
+	        String email,
+	        String course_name,
+	        String mobile,
+	        String whatsapp,
+	        String userName,
+	        String country,
+	        String location,      // NEW
+	        String visaStatus,    // NEW
+	        String stateCity,
+	        String coordinator,
+	        String leadStatus,
+	        String leadTag,
+	        String date,
+	        String remark,
+	        String callMadeOn,
+	        String lastCallMadeOn,
+	        String remarkCoordinator,
+	        String mode,
+	        String timeZone,
+	        String analystName,
+	        String source,
+	        String seoTeam,
+	        String status,
+	        LocalDateTime lastEmailSentAt
+	) {
+	    this.id = id;
+	    this.studentId = studentId;
+	    this.email = email;
+	    this.course_name = course_name;
+	    this.mobile = mobile;
+	    this.whatsapp = whatsapp;
+	    this.userName = userName;
+	    this.country = country;
+
+	    this.location = location;          // NEW
+	    this.visaStatus = visaStatus;      // NEW
+
+	    this.stateCity = stateCity;
+	    this.coordinator = coordinator;
+	    this.leadStatus = leadStatus;
+	    this.leadTag = leadTag;
+	    this.date = date;
+	    this.remark = remark;
+	    this.callMadeOn = callMadeOn;
+	    this.lastCallMadeOn = lastCallMadeOn;
+	    this.remarkCoordinator = remarkCoordinator;
+	    this.mode = mode;
+	    this.timeZone = timeZone;
+	    this.analystName = analystName;
+	    this.source = source;
+	    this.seoTeam = seoTeam;
+	    this.status = status;
+	    this.lastEmailSentAt = lastEmailSentAt;
+	}
 	public void setLeadTag(String leadTag) {
 		this.leadTag = leadTag;
 	}
@@ -241,6 +269,18 @@ public class RegisterStudentResponseDTO {
 	}
 	public void setLastEmailSentAt(LocalDateTime lastEmailSentAt) {
 		this.lastEmailSentAt = lastEmailSentAt;
+	}
+	public String getLocation() {
+		return location;
+	}
+	public void setLocation(String location) {
+		this.location = location;
+	}
+	public String getVisaStatus() {
+		return visaStatus;
+	}
+	public void setVisaStatus(String visaStatus) {
+		this.visaStatus = visaStatus;
 	}
 	
 }

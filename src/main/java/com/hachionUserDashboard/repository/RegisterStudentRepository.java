@@ -101,6 +101,8 @@ public interface RegisterStudentRepository extends JpaRepository<RegisterStudent
 			    rs.whatsapp,
 			    rs.user_name,
 			    rs.country,
+			     rs.location,      
+    rs.visa_status, 
 			    rs.state_city,
 			    rs.coordinator,
 			    rs.lead_status,
