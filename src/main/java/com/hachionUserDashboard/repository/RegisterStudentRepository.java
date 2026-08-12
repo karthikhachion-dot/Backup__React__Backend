@@ -53,7 +53,7 @@ public interface RegisterStudentRepository extends JpaRepository<RegisterStudent
 	String findCompletionDateByCourseAndUser(@Param("courseName") String courseName,
 			@Param("userName") String userName);
 
-	@Query(value = "SELECT * FROM registerstudent ORDER BY date DESC", nativeQuery = true)
+	@Query(value = "SELECT * FROM registerstudent WHERE status IS NULL OR status <> 'DELETED' ORDER BY date DESC", nativeQuery = true)
 	List<RegisterStudent> findAllOrderByDateDescNative();
 
 	@Query(value = "SELECT * FROM registerstudent WHERE student_id = :studentId", nativeQuery = true)
@@ -133,6 +133,8 @@ public interface RegisterStudentRepository extends JpaRepository<RegisterStudent
 			    FROM student_remarks_history
 			) sr
 			ON rs.student_id = sr.student_id AND sr.rn = 1
+
+			WHERE rs.status IS NULL OR rs.status <> 'DELETED'
 
 			ORDER BY rs.date DESC
 			""", nativeQuery = true)

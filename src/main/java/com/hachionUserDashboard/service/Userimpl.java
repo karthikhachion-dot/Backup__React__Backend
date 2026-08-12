@@ -68,14 +68,21 @@ public class Userimpl implements UserService {
 	@Override
 	public String sendOtp(String email) {
 		RegisterStudent user = userRepository.findByEmail(email);
-		if (user != null) {
+		if (user != null && !"DELETED".equalsIgnoreCase(user.getStatus())) {
 			throw new IllegalArgumentException("This email already exists.");
 		}
 
 		String otp = otpUtil.generateOtp();
 
-		user = new RegisterStudent();
-		user.setEmail(email);
+		// email has a DB-level unique constraint, so a previously-deleted
+		// registration's row is reactivated and reused rather than inserting
+		// a new one; registerApi() overwrites all profile fields anyway once
+		// the user completes registration again.
+		if (user == null) {
+			user = new RegisterStudent();
+			user.setEmail(email);
+		}
+		user.setStatus("ACTIVE");
 		user.setOTP(otp);
 		user.setOTPStatus(true);
 
@@ -235,6 +242,13 @@ public class Userimpl implements UserService {
 		String msg = "";
 		String msg1 = "";
 		RegisterStudent user1 = userRepository.findByEmail(loginRequest.getEmail());
+
+		if (user1 != null && "DELETED".equalsIgnoreCase(user1.getStatus())) {
+			// A registration removed via Admin Panel -> Student Admin -> Registration
+			// Portal must not be a valid login target — same source of truth as
+			// sendOtp()'s duplicate-email check.
+			user1 = null;
+		}
 
 		if (user1 != null) {
 			String password = loginRequest.getPassword();

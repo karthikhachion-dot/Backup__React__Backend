@@ -814,8 +814,24 @@ public class RegisterStudentService {
 
 		String status = repository.findStatusByEmail(email);
 
-		if (status == null) {
-			throw new RuntimeException("ACTIVE");
+		// No active registration for this email — either it was never
+		// registered (status == null) or it was removed via Admin Panel ->
+		// Student Admin -> Register (soft delete, status == "DELETED"; see
+		// RegisterStudentController.deleteRegisterStudent). Both cases must
+		// be treated identically: the email is available for a new signup,
+		// matching the same DELETED-exclusion already used by
+		// Userimpl.sendOtp(), RegisterStudentController.addStudent(), and
+		// Userimpl.LoginUser(). Previously the null case threw "ACTIVE" as
+		// the error message (a confusing leftover under which a brand-new,
+		// never-registered email looked identical to an active account),
+		// and the DELETED case fell through to `return status` below with
+		// HTTP 200 — which the /register page's existing-email check then
+		// read as "this email already exists", incorrectly blocking
+		// re-registration after an admin deletion. "Email not found."
+		// matches the wording already used by regenerateOtp() below for the
+		// same not-registered condition.
+		if (status == null || "DELETED".equalsIgnoreCase(status)) {
+			throw new RuntimeException("Email not found.");
 		}
 
 		// 🔴 If DISABLED → throw error

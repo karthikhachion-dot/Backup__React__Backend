@@ -29,7 +29,6 @@ import com.hachionUserDashboard.dto.StudentRemarkResponse;
 import com.hachionUserDashboard.entity.RegisterStudent;
 import com.hachionUserDashboard.entity.StudentRemarksHistory;
 import com.hachionUserDashboard.repository.EmailAutomationRuleRepository;
-import com.hachionUserDashboard.repository.EnrollRepository;
 import com.hachionUserDashboard.repository.RegisterStudentRepository;
 import com.hachionUserDashboard.service.EmailService;
 import com.hachionUserDashboard.service.RegisterStudentService;
@@ -61,9 +60,6 @@ public class RegisterStudentController {
 	
 	@Autowired
 	private WebhookSenderService webhookSenderService;
-	
-	@Autowired
-	private EnrollRepository enrollRepository;
 
 	@GetMapping("/registerstudent/{id}")
 	public ResponseEntity<RegisterStudent> getRegisterStudent(@PathVariable Long id) {
@@ -85,11 +81,18 @@ public class RegisterStudentController {
 			throw new IllegalArgumentException("Mobile number is required");
 		}
 
-		if (repo.existsByEmail(student.getEmail())) {
+		RegisterStudent existing = repo.findByEmail(student.getEmail());
+		if (existing != null && !"DELETED".equalsIgnoreCase(existing.getStatus())) {
 			throw new RuntimeException("Email already exists in the system");
 		}
 		if (repo.existsByMobile(student.getMobile())) {
 			throw new RuntimeException("Mobile number already exists in the system");
+		}
+		if (existing != null) {
+			// email has a DB-level unique constraint — reuse the previously-deleted
+			// row's id so this save() updates it in place instead of inserting a
+			// duplicate.
+			student.setId(existing.getId());
 		}
 		student.setAdditional_email(null);
 		student.setAdditional_phone(0);
@@ -327,14 +330,13 @@ public class RegisterStudentController {
 		RegisterStudent student = repo.findById(id)
 				.orElseThrow(() -> new RuntimeException("Student not found"));
 
-		String email = student.getEmail();
-
-		if (enrollRepository.existsByEmail(email)) {
-			return ResponseEntity.badRequest()
-					.body("Cannot delete student. This student is already enrolled.");
-		}
-
-		repo.deleteById(id);
+		// Soft delete: only the Registration Portal record is deactivated
+		// (status = "DELETED"). Payments, Enrollments, Certificates, etc. are
+		// untouched, since the row itself — and its id — is never removed, so
+		// nothing referencing it can be orphaned. This also removes the need to
+		// block deletion when the student has enrollment history.
+		student.setStatus("DELETED");
+		repo.save(student);
 
 		return ResponseEntity.ok("Student deleted successfully.");
 	}
