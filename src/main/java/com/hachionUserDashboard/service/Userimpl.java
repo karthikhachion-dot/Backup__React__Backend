@@ -339,7 +339,11 @@ public class Userimpl implements UserService {
 	public String forgotpassword(String email) {
 		RegisterStudent user = userRepository.findByEmail(email);
 
-		if (user == null) {
+		// Same DELETED-exclusion rule as getStudentStatus()/sendOtp()/LoginUser()
+		// — a registration removed via Admin Panel -> Student Admin -> Register
+		// must not be a valid Forgot Password target either, otherwise a
+		// deleted account could still reset a password and sign in.
+		if (user == null || "DELETED".equalsIgnoreCase(user.getStatus())) {
 			return "User not found with this email.";
 		}
 
