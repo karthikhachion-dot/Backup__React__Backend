@@ -129,17 +129,48 @@ public class Userimpl implements UserService {
 		user.setPassword(hashedPassword);
 		user.setMobile(registrationRequest.getMobile());
 		user.setCountry(registrationRequest.getCountry());
-		user.setStudentId(generateNextStudentId());
+		// Preserve an existing student_id (e.g. a previously-deleted
+		// registration being reactivated via sendOtp/findByEmail above) -
+		// student_remarks_history rows may already reference it, and
+		// overwriting it with a freshly generated one orphans those rows and
+		// fails the FK constraint on this UPDATE.
+		if (user.getStudentId() == null || user.getStudentId().isBlank()) {
+			user.setStudentId(generateNextStudentId());
+		}
 		user.setMode(registrationRequest.getMode());
 		user.setDate(LocalDate.now());
 		user.setStatus("ACTIVE");
-		
-		emailService.sendEmailForRegisterOnlineStudent(registrationRequest.getEmail(),
-				registrationRequest.getFirstName());
 
+		// Persist the completed registration FIRST - this IS the actual
+		// business outcome (password set, profile fields filled in, account
+		// activated). Previously the welcome email was sent *before* this
+		// save(), and emailService.sendEmailForRegisterOnlineStudent() wraps
+		// any mail failure (including a bad SMTP password, whose underlying
+		// Spring MailAuthenticationException message is literally
+		// "Authentication failed") into a checked MessagingException and
+		// rethrows it - which propagated straight out of this method, out of
+		// UserController.updatePassword(), to the app-wide
+		// GlobalExceptionHandler, and userRepository.save(user) below was
+		// *never reached*. Concretely: a user could complete OTP
+		// verification correctly and still end up with no password, no
+		// student ID, and no way to log in, because the row was never
+		// actually saved - while seeing a registration-failure response
+		// that looked exactly like an auth problem. Saving first guarantees
+		// the registration itself cannot be silently lost to a mail relay
+		// outage.
 		RegisterStudent save = userRepository.save(user);
 
 		System.out.println("✅ User saved successfully in DB: " + save.getEmail());
+
+		try {
+			emailService.sendEmailForRegisterOnlineStudent(registrationRequest.getEmail(),
+					registrationRequest.getFirstName());
+		} catch (Exception e) {
+			// Registration already succeeded above - a failed welcome email
+			// is a delivery problem, not a registration failure.
+			System.err.println("Welcome email failed (registration already saved for " + save.getEmail() + "): "
+					+ e.getMessage());
+		}
 
 		webhookSenderService.sendRegistrationDetailsOnline(save);
 

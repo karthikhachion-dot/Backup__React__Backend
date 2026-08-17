@@ -49,6 +49,7 @@ import com.hachionUserDashboard.dto.UserProfileUpdateRequest;
 import com.hachionUserDashboard.dto.UserProfileUpdateResponse;
 import com.hachionUserDashboard.dto.UserRegistrationRequest;
 import com.hachionUserDashboard.entity.RegisterStudent;
+import com.hachionUserDashboard.exception.OtpEmailDeliveryException;
 import com.hachionUserDashboard.repository.RegisterStudentRepository;
 
 import Response.LoginResponse;
@@ -123,8 +124,16 @@ public class UserController {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Email is required"));
 		}
 
-		String response = userService.sendOtp(email);
-		return ResponseEntity.ok(Map.of("message", response));
+		try {
+			String response = userService.sendOtp(email);
+			return ResponseEntity.ok(Map.of("message", response));
+		} catch (OtpEmailDeliveryException e) {
+			// The OTP itself was already generated/saved by userService.sendOtp() -
+			// only the email relay failed (e.g. bad SMTP credentials). 503 (not
+			// 400) makes clear this is a server-side delivery problem, not
+			// something wrong with the email address the user typed.
+			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("message", e.getMessage()));
+		}
 	}
 
 	@PostMapping("/verify-otp")
@@ -143,14 +152,35 @@ public class UserController {
 	public ResponseEntity<?> updatePassword(@RequestBody UserRegistrationRequest registrationRequest)
 			throws MessagingException {
 
-		userService.registerApi(registrationRequest);
+		// Previously discarded registerApi()'s return value and always answered
+		// 200 "Password updated successfully" even when registration genuinely
+		// failed (e.g. "Email does not exist." because verify-otp was never
+		// completed for this email, or the OTP step was skipped) - the frontend
+		// had no way to distinguish success from failure from the HTTP layer
+		// alone. Map the known failure string to a real error status; anything
+		// unrecognized still succeeds only when the service's own success
+		// message is returned.
+		String result = userService.registerApi(registrationRequest);
 
-		return ResponseEntity.ok("Password updated successfully");
+		if ("User details updated successfully.".equals(result)) {
+			return ResponseEntity.ok(result);
+		}
+		if (result != null && result.toLowerCase().contains("does not exist")) {
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+		}
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
 	}
 
 	@PutMapping("/regenerate-otp")
 	public ResponseEntity<String> regenerateOtp(@RequestParam String email) {
-		return new ResponseEntity<>(userService.regenerateOtp(email), HttpStatus.OK);
+		try {
+			return new ResponseEntity<>(userService.regenerateOtp(email), HttpStatus.OK);
+		} catch (OtpEmailDeliveryException e) {
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.SERVICE_UNAVAILABLE);
+		} catch (RuntimeException e) {
+			// e.g. "Email not found." from Userimpl.regenerateOtp()
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+		}
 	}
 
 	@GetMapping("/students")

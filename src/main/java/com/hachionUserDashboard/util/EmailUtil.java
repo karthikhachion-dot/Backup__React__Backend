@@ -15,6 +15,7 @@ import com.hachionUserDashboard.entity.ApplyJobDetails;
 import com.hachionUserDashboard.entity.Enroll;
 import com.hachionUserDashboard.entity.Query;
 import com.hachionUserDashboard.entity.RequestBatch;
+import com.hachionUserDashboard.exception.OtpEmailDeliveryException;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -59,9 +60,28 @@ public class EmailUtil {
 			javaMailSender.send(message);
 			System.out.println("OTP Email sent successfully!");
 
-		} catch (MessagingException e) {
+		} catch (Exception e) {
+			// Was previously `catch (MessagingException e)` only, which
+			// silently swallowed the failure (just printed to stderr) -
+			// but javaMailSender.send() actually throws an *unchecked*
+			// org.springframework.mail.MailException (e.g.
+			// MailAuthenticationException when Gmail rejects the configured
+			// SMTP app password, whose own message is literally
+			// "Authentication failed"). That exception was never caught
+			// here, so it escaped uncaught all the way up through
+			// Userimpl.sendOtp()/regenerateOtp() to the app-wide
+			// GlobalExceptionHandler, which returned the raw SMTP error text
+			// to the frontend - indistinguishable from a real OTP/login
+			// authentication failure, when the OTP row had in fact already
+			// been generated and saved and the only thing that failed was
+			// the email relay. Catching broadly here and re-throwing a
+			// dedicated, honest exception lets the caller tell the user
+			// what actually happened.
 			e.printStackTrace();
-			System.err.println("Error sending email: " + e.getMessage());
+			System.err.println("Error sending OTP email: " + e.getMessage());
+			throw new OtpEmailDeliveryException(
+					"We generated your OTP but could not email it right now due to a mail server issue. Please try again in a few minutes or use Resend OTP.",
+					e);
 		}
 	}
 

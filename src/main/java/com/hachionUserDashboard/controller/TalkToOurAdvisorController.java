@@ -20,8 +20,15 @@ import com.hachionUserDashboard.service.WebhookSenderService;
 import Response.TalkToOurAdvisorResponse;
 import Service.TalkToOurAdvisorServiceInterface;
 
-//@CrossOrigin
-@CrossOrigin(origins = { "http://localhost:3000" })
+// Was @CrossOrigin(origins = { "http://localhost:3000" }) - a class-level
+// annotation restricting CORS on every /advisors endpoint to just the local
+// dev frontend. Empirically (curl preflight + POST with
+// Origin: https://www.hachion.co) the global CorsConfig bean's wider origin
+// list still won for this controller in this Spring Boot version, so it was
+// not actually blocking production traffic - but it's misleading dead
+// config that contradicts CorsConfig.java's allowed-origins list and is a
+// latent risk on any Spring/Spring Security upgrade. Removed so this
+// controller relies on the single global CORS source of truth.
 @RestController
 @RequestMapping("/advisors")
 public class TalkToOurAdvisorController {

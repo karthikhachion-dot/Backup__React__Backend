@@ -32,18 +32,26 @@ public class TalkToOurAdvisorServiceImpl implements TalkToOurAdvisorServiceInter
 
 	@Override
 	public TalkToOurAdvisorResponse createTalkToOurAdvisor(TalkToOurAdvisorRequest ourAdvisor) {
-		try {
-
-			sendToAdmin(ourAdvisor);
-			sendToUser(ourAdvisor);
-
+		// Persist the lead FIRST. This is the entire business value of the
+		// "Corporate Training" / "Contact With Us" forms - a lead captured in
+		// the DB for the sales team to follow up on. Previously the two
+		// confirmation emails were sent *before* repository.save(), and only
+		// the checked jakarta.mail.MessagingException was caught - but
+		// javaMailSender.send() (called inside sendToAdmin/sendToUser) throws
+		// the *unchecked* org.springframework.mail.MailException family (e.g.
+		// MailAuthenticationException when the configured Gmail SMTP app
+		// password is rejected, whose own message is literally "Authentication
+		// failed"). That exception was never caught here, so it escaped this
+		// method entirely, the row was never saved, and the request came back
+		// as an uncaught 400 from the app-wide GlobalExceptionHandler with that
+		// raw, misleading mail-library text as the body - identical for both
+		// "Get Free Consultation" and "Contact With Us", since both POST here.
 		TalkToOurAdvisor entity = new TalkToOurAdvisor(null, ourAdvisor.getFullName(), ourAdvisor.getEmailId(),
 				ourAdvisor.getNoOfPeople(), ourAdvisor.getCompanyName(), ourAdvisor.getMobileNumber(),
 				ourAdvisor.getTrainingCourse(), ourAdvisor.getComments(), ourAdvisor.getCountry(), LocalDate.now());
 		TalkToOurAdvisor savedEntity = repository.save(entity);
 
 		TalkToOurAdvisorResponse response = new TalkToOurAdvisorResponse();
-		response.setMessage("Your details have been successfully sent to the team, and you will get a call shortly.");
 		response.setId(savedEntity.getId());
 		response.setFullName(savedEntity.getFullName());
 		response.setEmailId(savedEntity.getEmailId());
@@ -54,14 +62,21 @@ public class TalkToOurAdvisorServiceImpl implements TalkToOurAdvisorServiceInter
 		response.setComments(savedEntity.getComments());
 		response.setCountry(savedEntity.getCountry());
 		response.setDate(savedEntity.getDate());
-		
-		return response;
-		} catch (MessagingException e) {
-		
-			TalkToOurAdvisorResponse errorResponse = new TalkToOurAdvisorResponse();
-			errorResponse.setMessage("Email sending failed. Request not saved: " + e.getMessage());
-			return errorResponse;
+
+		try {
+			sendToAdmin(ourAdvisor);
+			sendToUser(ourAdvisor);
+			response.setMessage("Your details have been successfully sent to the team, and you will get a call shortly.");
+		} catch (Exception e) {
+			// Broadened from `catch (MessagingException e)` - see comment above.
+			// The lead is already safely saved regardless of this outcome, so
+			// this is a warning, not a request failure.
+			System.err.println("Advisor confirmation email failed (lead already saved, id=" + savedEntity.getId()
+					+ "): " + e.getMessage());
+			response.setMessage("Your details have been received. Our team will contact you shortly.");
 		}
+
+		return response;
 	}
 
 	private void sendToAdmin(TalkToOurAdvisorRequest toOurAdvisorRequest) throws MessagingException {
