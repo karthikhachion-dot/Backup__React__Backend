@@ -2,6 +2,7 @@ package com.hachionUserDashboard.util;
 
 import java.io.File;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -31,12 +32,33 @@ public class EmailUtil {
 	@Value("${applyjob.resume.upload.dir}")
 	private String resumeUploadDir;
 
+	@Value("${app.mail.from}")
+	private String mailFrom;
+
+	@Value("${spring.mail.password:}")
+	private String mailPassword;
+
+	// Fails loudly in the startup logs rather than only when the first real
+	// user hits send-otp/register/an advisor form - MAIL_PASSWORD has no
+	// default (see application.properties), so an empty value here means
+	// nobody has configured a working SMTP credential via environment
+	// variables yet, not a code bug.
+	@PostConstruct
+	private void warnIfMailNotConfigured() {
+		if (mailPassword == null || mailPassword.isBlank()) {
+			System.err.println(
+					"WARNING: MAIL_PASSWORD is not set - outbound email (OTP, registration, Corporate Training "
+							+ "confirmations) will fail until a valid SMTP credential is provided via the MAIL_HOST/"
+							+ "MAIL_PORT/MAIL_USERNAME/MAIL_PASSWORD/MAIL_FROM environment variables.");
+		}
+	}
+
 	public void sendOtpEmail(String email, String otp) {
 		try {
 			MimeMessage message = javaMailSender.createMimeMessage();
 			MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-			helper.setFrom("trainings@hachion.co");
+			helper.setFrom(mailFrom);
 			helper.setTo(email);
 			helper.setSubject("Your One-Time Password (OTP) to Access Your Account");
 
