@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
@@ -27,7 +28,33 @@ import com.hachionUserDashboard.service.Userimpl;
 @EnableWebSecurity
 public class SecurityConfig {
 
+	// Spring Security's default HeadersConfigurer sends X-Frame-Options: DENY
+	// on every response, which blocks the Admin Panel's certificate preview
+	// iframe outright (the frontend and this API are different origins, so
+	// even X-Frame-Options: SAMEORIGIN wouldn't help - that header has no way
+	// to name a specific allowed origin). This narrower, higher-priority
+	// chain covers only the PDF preview endpoint: it disables the blanket
+	// X-Frame-Options and replaces it with CSP frame-ancestors naming the
+	// exact frontend origins already trusted via CORS (CorsConfig) - nothing
+	// else changes, every other endpoint keeps X-Frame-Options: DENY as-is.
 	@Bean
+	@Order(1)
+	public SecurityFilterChain certificatePreviewFrameChain(HttpSecurity http) throws Exception {
+		String frameAncestors = "frame-ancestors 'self' " + String.join(" ", CorsConfig.ALLOWED_ORIGINS);
+
+		http.securityMatcher("/certificate/downloadForView/**")
+				.cors(cors -> {
+				})
+				.csrf(csrf -> csrf.disable())
+				.authorizeHttpRequests(authz -> authz.anyRequest().permitAll())
+				.headers(headers -> headers.frameOptions(frame -> frame.disable())
+						.contentSecurityPolicy(csp -> csp.policyDirectives(frameAncestors)));
+
+		return http.build();
+	}
+
+	@Bean
+	@Order(2)
 	public SecurityFilterChain securityFilterChain(HttpSecurity http,
 			AuthenticationSuccessHandler authenticationSuccessHandler // injected GoogleAuthSuccessHandler
 	) throws Exception {
