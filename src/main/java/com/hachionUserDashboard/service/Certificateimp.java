@@ -242,6 +242,48 @@ public class Certificateimp implements CertificateService {
 	        contentStream.fill();
 	        contentStream.setGraphicsStateParameters(opaqueFill);
 
+	        // Passage cover is drawn here too (ahead of its own section below)
+	        // so both cover rects are down BEFORE the watermark is drawn next -
+	        // the watermark needs to sit on top of the opaque white covers but
+	        // underneath the real name/passage text, spanning both areas as
+	        // one continuous piece of text like the reference does.
+	        float aboutCoverTopY = pageHeight * (1 - 0.495f);
+	        float aboutCoverBottomY = pageHeight * (1 - 0.65f);
+	        float aboutCoverWidth = pageWidth * 0.64f;
+	        float aboutCoverX = (pageWidth * centerXRatio) - (aboutCoverWidth / 2);
+	        contentStream.setNonStrokingColor(1f, 1f, 1f);
+	        contentStream.setGraphicsStateParameters(semiTransparentFill);
+	        contentStream.addRect(aboutCoverX, aboutCoverBottomY, aboutCoverWidth, aboutCoverTopY - aboutCoverBottomY);
+	        contentStream.fill();
+	        contentStream.setGraphicsStateParameters(opaqueFill);
+
+	        // Watermark: the artwork's own baked "Hachion" watermark sits in
+	        // this same area, behind the SAME baked placeholder text the
+	        // cover rects above hide - there's no way to reveal one without
+	        // the other from a single flat raster, and a semi-transparent
+	        // cover (tried previously) let the placeholder text bleed through
+	        // legibly. Drawing an independent vector watermark here instead -
+	        // on top of the now-opaque covers, underneath the real text drawn
+	        // next - reproduces the reference's look with no bleed-through
+	        // risk. Color/rotation/size measured off the reference render:
+	        // light gray #EBEBEB, ~13 degree upward tilt, spanning the full
+	        // combined name+passage area as one word.
+	        String watermarkText = "Hachion";
+	        float watermarkFontSize = 105f;
+	        float watermarkTextWidth = fontBold.getStringWidth(watermarkText) / 1000 * watermarkFontSize;
+	        double watermarkAngle = Math.toRadians(11);
+	        float watermarkCenterX = pageWidth * 0.62f;
+	        float watermarkCenterY = pageHeight * (1 - 0.50f);
+	        float watermarkStartX = (float) (watermarkCenterX - (watermarkTextWidth / 2) * Math.cos(watermarkAngle));
+	        float watermarkStartY = (float) (watermarkCenterY - (watermarkTextWidth / 2) * Math.sin(watermarkAngle));
+	        contentStream.beginText();
+	        contentStream.setFont(fontBold, watermarkFontSize);
+	        contentStream.setNonStrokingColor(0.92f, 0.92f, 0.92f);
+	        contentStream.setTextMatrix(org.apache.pdfbox.util.Matrix.getRotateInstance(
+	                watermarkAngle, watermarkStartX, watermarkStartY));
+	        contentStream.showText(watermarkText);
+	        contentStream.endText();
+
 	        float nameWidth = fontBold.getStringWidth(studentName) / 1000 * nameFontSize;
 	        float nameAreaWidth = pageWidth * 0.50f;
 	        while (nameWidth > nameAreaWidth && nameFontSize > 17) {
@@ -258,22 +300,11 @@ public class Certificateimp implements CertificateService {
 	        contentStream.endText();
 
 	        // =======================
-	        // 2) About text (wrapped, bold parts) - covers the baked-in
-	        // bracketed placeholder paragraph ("...successfully completed
-	        // the [Course Name] Program..., comprising 30 hours of [Course
-	        // Type]...") with white, then draws the real course/hours/mode
-	        // paragraph in its place.
+	        // 2) About text (wrapped, bold parts) - the cover rect for this
+	        // area (hiding the baked-in bracketed placeholder paragraph) was
+	        // already drawn above, ahead of the watermark. Only the layout
+	        // math for wrapping/positioning the real text is left here.
 	        // =======================
-	        float aboutCoverTopY = pageHeight * (1 - 0.495f);
-	        float aboutCoverBottomY = pageHeight * (1 - 0.65f);
-	        float aboutCoverWidth = pageWidth * 0.64f;
-	        float aboutCoverX = (pageWidth * centerXRatio) - (aboutCoverWidth / 2);
-	        contentStream.setNonStrokingColor(1f, 1f, 1f);
-	        contentStream.setGraphicsStateParameters(semiTransparentFill);
-	        contentStream.addRect(aboutCoverX, aboutCoverBottomY, aboutCoverWidth, aboutCoverTopY - aboutCoverBottomY);
-	        contentStream.fill();
-	        contentStream.setGraphicsStateParameters(opaqueFill);
-
 	        float aboutTopY = pageHeight * (1 - 0.545f);
 	        float availableAboutHeight = aboutTopY - aboutCoverBottomY - 6f;
 	        float safeWhiteWidth = aboutCoverWidth - 10f;
