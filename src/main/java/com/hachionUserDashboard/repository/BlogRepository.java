@@ -52,13 +52,24 @@ List<Object[]> findAllBlogColumns();
 	@Query(value = "SELECT * FROM blogs WHERE LOWER(REPLACE(title,' ','-')) = LOWER(:slug) LIMIT 1", nativeQuery = true)
 	Optional<Blogs> findBySlug(@Param("slug") String slug);
 
-	@Query("SELECT COUNT(b) > 0 FROM Blogs b WHERE b.shortTitle = :shortTitle")
+	// TRIM()'d on both sides: some existing rows have a leading/trailing
+	// space in short_title (invisible in the admin's text input, predating
+	// the controller-level trim added alongside this) and this column's
+	// collation does NOT ignore that in an exact `=` comparison (verified
+	// live: "best cybersecurity certifications" 404s while "...
+	// certifications " - with the trailing space - 200s against the same
+	// row) - so an exact match here silently depended on a caller
+	// reconstructing that exact stray whitespace. getBlogPath()
+	// (src/lib/blogUrl.js, frontend) now builds the clean URL with that
+	// whitespace-turned-hyphen trimmed off, which needs the lookup below to
+	// find the same row from either form of the query.
+	@Query("SELECT COUNT(b) > 0 FROM Blogs b WHERE TRIM(b.shortTitle) = TRIM(:shortTitle)")
 	boolean existsByShortTitle(@Param("shortTitle") String shortTitle);
 
-	@Query("SELECT COUNT(b) > 0 FROM Blogs b WHERE b.shortTitle = :shortTitle AND b.id != :id")
+	@Query("SELECT COUNT(b) > 0 FROM Blogs b WHERE TRIM(b.shortTitle) = TRIM(:shortTitle) AND b.id != :id")
 	boolean existsByShortTitleAndIdNot(@Param("shortTitle") String shortTitle, @Param("id") int id);
 
-	@Query(value = "SELECT * FROM blogs WHERE short_title = :shortTitle", nativeQuery = true)
+	@Query(value = "SELECT * FROM blogs WHERE TRIM(short_title) = TRIM(:shortTitle) LIMIT 1", nativeQuery = true)
 	Optional<Blogs> findBlogByShortTitle(@Param("shortTitle") String shortTitle);
 
 }

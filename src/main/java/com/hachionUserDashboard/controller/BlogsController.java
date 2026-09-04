@@ -100,6 +100,15 @@ public class BlogsController {
 			objectMapper.registerModule(new JavaTimeModule());
 			Blogs blog = objectMapper.readValue(blogData, Blogs.class);
 
+			// Leading/trailing spaces are invisible in the admin's "Short Blog
+			// URL" text input but survive into the stored value, and become a
+			// leading/trailing "-" once the frontend turns spaces into hyphens
+			// for the public URL - trimming here (root cause) stops newly
+			// created blogs from getting a stray trailing-hyphen URL.
+			if (blog.getShortTitle() != null) {
+				blog.setShortTitle(blog.getShortTitle().trim());
+			}
+
 			// Blog main image
 			if (blogImage != null && !blogImage.isEmpty()) {
 				String imagePath = saveFile(blogImage, "images");
@@ -170,7 +179,12 @@ public class BlogsController {
 
 				Blogs updatedBlog = objectMapper.readValue(blogData, Blogs.class);
 
-				String shortTitle = updatedBlog.getShortTitle();
+				// Trimmed before validation/storage (root cause fix): a
+				// leading/trailing space is invisible in the admin's text
+				// input and passes the alphabets-and-spaces check below, but
+				// turns into a leading/trailing "-" once the frontend maps
+				// spaces to hyphens for the public blog URL.
+				String shortTitle = updatedBlog.getShortTitle() != null ? updatedBlog.getShortTitle().trim() : "";
 
 				if (!shortTitle.matches("^[A-Za-z ]+$")) {
 					return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
@@ -185,7 +199,7 @@ public class BlogsController {
 
 				blog.setCategory_name(updatedBlog.getCategory_name());
 				blog.setTitle(updatedBlog.getTitle());
-				blog.setShortTitle(updatedBlog.getShortTitle());
+				blog.setShortTitle(shortTitle);
 				blog.setAuthor(updatedBlog.getAuthor());
 				blog.setDescription(updatedBlog.getDescription());
 				blog.setMeta_description(updatedBlog.getMeta_description());
@@ -406,6 +420,8 @@ public class BlogsController {
 
 	@GetMapping("/blog/shortTitle")
 	public ResponseEntity<String> checkShortTitle(@RequestParam String shortTitle) {
+
+		shortTitle = shortTitle != null ? shortTitle.trim() : "";
 
 		if (!shortTitle.matches("^[A-Za-z ]+$")) {
 			throw new ResourceNotFoundException(
